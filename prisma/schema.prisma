@@ -1,0 +1,217 @@
+// Techboom SaaS Platform - Prisma Schema
+// PostgreSQL with full relational design
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  USER
+  CUSTOMER
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  REFUNDED
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  REFUNDED
+}
+
+enum TransactionType {
+  COMMISSION
+  WITHDRAWAL
+  BONUS
+  REFUND
+}
+
+enum TransactionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  COMPLETED
+}
+
+model User {
+  id             String    @id @default(uuid())
+  name           String
+  email          String    @unique
+  password       String
+  role           UserRole  @default(USER)
+  phone          String?
+  avatar         String?
+  isActive       Boolean   @default(true)
+  isVerified     Boolean   @default(false)
+  referralCode   String    @unique
+  referredBy     String?
+  walletBalance  Decimal   @default(0) @db.Decimal(10, 2)
+  refreshToken   String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  // Relations
+  referrer       User?     @relation("UserReferrals", fields: [referredBy], references: [referralCode])
+  referrals      User[]    @relation("UserReferrals")
+  orders         Order[]
+  referralLeads  Referral[] @relation("ReferrerUser")
+  transactions   Transaction[]
+  influencerCampaigns InfluencerCampaign[]
+
+  @@index([email])
+  @@index([referralCode])
+  @@index([referredBy])
+}
+
+model Service {
+  id          String   @id @default(uuid())
+  name        String
+  slug        String   @unique
+  description String
+  price       Decimal  @db.Decimal(10, 2)
+  category    String
+  icon        String?
+  image       String?
+  isActive    Boolean  @default(true)
+  features    String[]
+  deliveryDays Int     @default(7)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  orders      Order[]
+
+  @@index([slug])
+  @@index([category])
+}
+
+model Order {
+  id            String      @id @default(uuid())
+  orderNumber   String      @unique
+  userId        String
+  serviceId     String
+  status        OrderStatus @default(PENDING)
+  amount        Decimal     @db.Decimal(10, 2)
+  notes         String?
+  requirements  Json?
+  referralCode  String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  user          User        @relation(fields: [userId], references: [id])
+  service       Service     @relation(fields: [serviceId], references: [id])
+  payment       Payment?
+  referral      Referral?   @relation("OrderReferral")
+
+  @@index([userId])
+  @@index([serviceId])
+  @@index([orderNumber])
+  @@index([referralCode])
+}
+
+model Referral {
+  id              String   @id @default(uuid())
+  referrerId      String
+  referredUserId  String?
+  orderId         String?  @unique
+  referralCode    String
+  commissionRate  Decimal  @default(0.10) @db.Decimal(5, 4)
+  commissionAmount Decimal? @db.Decimal(10, 2)
+  isPaid          Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  referrer        User     @relation("ReferrerUser", fields: [referrerId], references: [id])
+  order           Order?   @relation("OrderReferral", fields: [orderId], references: [id])
+
+  @@index([referrerId])
+  @@index([referralCode])
+  @@index([orderId])
+}
+
+model Transaction {
+  id          String            @id @default(uuid())
+  userId      String
+  type        TransactionType
+  amount      Decimal           @db.Decimal(10, 2)
+  status      TransactionStatus @default(PENDING)
+  description String?
+  referenceId String?
+  metadata    Json?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  user        User              @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([type])
+  @@index([status])
+}
+
+model Product {
+  id          String   @id @default(uuid())
+  name        String
+  slug        String   @unique
+  description String
+  price       Decimal  @db.Decimal(10, 2)
+  salePrice   Decimal? @db.Decimal(10, 2)
+  images      String[]
+  category    String
+  stock       Int      @default(0)
+  isActive    Boolean  @default(true)
+  tags        String[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([slug])
+  @@index([category])
+}
+
+model Payment {
+  id                String        @id @default(uuid())
+  orderId           String        @unique
+  razorpayOrderId   String        @unique
+  razorpayPaymentId String?
+  razorpaySignature String?
+  amount            Decimal       @db.Decimal(10, 2)
+  currency          String        @default("INR")
+  status            PaymentStatus @default(PENDING)
+  metadata          Json?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  order             Order         @relation(fields: [orderId], references: [id])
+
+  @@index([orderId])
+  @@index([razorpayOrderId])
+}
+
+model InfluencerCampaign {
+  id          String   @id @default(uuid())
+  userId      String
+  title       String
+  description String
+  budget      Decimal  @db.Decimal(10, 2)
+  platform    String[]
+  status      String   @default("DRAFT")
+  startDate   DateTime?
+  endDate     DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}

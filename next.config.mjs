@@ -12,11 +12,25 @@ const nextConfig = {
       { protocol: 'https', hostname: 'images.unsplash.com' },
     ],
   },
-  webpack: (config) => {
+  experimental: {
+    serverComponentsExternalPackages: ['jsonwebtoken'],
+  },
+  webpack: (config, { isServer }) => {
     config.resolve.alias = {
       ...config.resolve.alias,
       '@': __dirname,
     }
+    
+    // Exclude jsonwebtoken from client bundle
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        crypto: false,
+        stream: false,
+        buffer: false,
+      }
+    }
+    
     return config
   },
   // Security headers

@@ -4,6 +4,7 @@ import { OrderStatusBadge } from '@/components/ui/Badge'
 import { TableSkeleton } from '@/components/ui/Skeleton'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import Link from 'next/link'
+import Script from 'next/script'
 
 interface Order {
   id: string
@@ -20,8 +21,10 @@ export default function OrdersPage() {
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(1)
   const [meta, setMeta] = useState({ total: 0, totalPages: 1 })
+  const [deleting, setDeleting] = useState<string | null>(null)
+  const [paying, setPaying] = useState<string | null>(null)
 
-  useEffect(() => {
+  const fetchOrders = () => {
     const token = localStorage.getItem('access_token')
     fetch(`/api/orders?page=${page}&limit=10`, {
       headers: { Authorization: `Bearer ${token}` },
@@ -34,10 +37,115 @@ export default function OrdersPage() {
         }
       })
       .finally(() => setLoading(false))
+  }
+
+  useEffect(() => {
+    fetchOrders()
   }, [page])
 
+  const handleDelete = async (orderId: string) => {
+    if (!confirm('Are you sure you want to delete this unpaid order?')) return
+    
+    setDeleting(orderId)
+    const token = localStorage.getItem('access_token')
+    
+    try {
+      const res = await fetch(`/api/orders/${orderId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      
+      const data = await res.json()
+      
+      if (data.success) {
+        fetchOrders()
+      } else {
+        alert(data.message || 'Failed to delete order')
+      }
+    } catch (error) {
+      alert('Failed to delete order')
+    } finally {
+      setDeleting(null)
+    }
+  }
+
+  const handlePayment = async (order: Order) => {
+    setPaying(order.id)
+    const token = localStorage.getItem('access_token')
+    const user = JSON.parse(localStorage.getItem('user') || '{}')
+
+    try {
+      // Create Razorpay payment order
+      const paymentRes = await fetch('/api/payments/create-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ orderId: order.id, amount: order.amount }),
+      })
+      const paymentData = await paymentRes.json()
+
+      if (!paymentData.success) {
+        alert(paymentData.error || 'Failed to initialize payment')
+        setPaying(null)
+        return
+      }
+
+      // Open Razorpay payment modal
+      const options = {
+        key: paymentData.data.keyId,
+        amount: paymentData.data.amount,
+        currency: 'INR',
+        name: 'TechBoom',
+        description: order.service.name,
+        order_id: paymentData.data.razorpayOrderId,
+        handler: async function (response: any) {
+          // Verify payment
+          const verifyRes = await fetch('/api/payments/verify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify({
+              orderId: order.id,
+              razorpayOrderId: response.razorpay_order_id,
+              razorpayPaymentId: response.razorpay_payment_id,
+              razorpaySignature: response.razorpay_signature,
+            }),
+          })
+          const verifyData = await verifyRes.json()
+
+          if (verifyData.success) {
+            alert('Payment successful!')
+            fetchOrders()
+          } else {
+            alert('Payment verification failed')
+          }
+          setPaying(null)
+        },
+        modal: {
+          ondismiss: function() {
+            setPaying(null)
+          }
+        },
+        prefill: {
+          name: user.name || '',
+          email: user.email || '',
+        },
+        theme: {
+          color: '#a855f7',
+        },
+      }
+
+      const razorpay = new (window as any).Razorpay(options)
+      razorpay.open()
+    } catch (error) {
+      console.error('Payment error:', error)
+      alert('Failed to initialize payment. Please try again.')
+      setPaying(null)
+    }
+  }
+
   return (
-    <div className="space-y-6">
+    <>
+      <Script src="https://checkout.razorpay.com/v1/checkout.js" />
+      <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-black text-white">My Orders</h1>
@@ -94,9 +202,36 @@ export default function OrdersPage() {
                     <td className="px-6 py-4"><OrderStatusBadge status={order.status} /></td>
                     <td className="px-6 py-4 text-white/40">{formatDate(order.createdAt)}</td>
                     <td className="px-6 py-4">
-                      <Link href={`/dashboard/orders/${order.id}`} className="text-purple-400 hover:text-purple-300 text-xs">
-                        View →
-                      </Link>
+                      <div className="flex items-center gap-2">
+                        {order.status === 'PENDING' ? (
+                          <>
+                            <button
+                              onClick={() => handlePayment(order)}
+                              disabled={paying === order.id}
+                              className="inline-flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-xs font-medium transition-colors disabled:opacity-50"
+                            >
+                              <span>💳</span>
+                              {paying === order.id ? 'Processing...' : 'Complete Payment'}
+                            </button>
+                            <button
+                              onClick={() => handleDelete(order.id)}
+                              disabled={deleting === order.id}
+                              className="bg-red-500/20 hover:bg-red-500/30 text-red-400 px-3 py-2 rounded-lg text-xs font-medium transition-colors disabled:opacity-50"
+                              title="Delete order"
+                            >
+                              {deleting === order.id ? '...' : '🗑️'}
+                            </button>
+                          </>
+                        ) : (
+                          <Link 
+                            href={`/dashboard/orders/${order.id}`} 
+                            className="inline-flex items-center gap-2 bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg text-xs font-medium transition-colors"
+                          >
+                            <span>📍</span>
+                            Track Order
+                          </Link>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -129,5 +264,6 @@ export default function OrdersPage() {
         )}
       </div>
     </div>
+    </>
   )
 }

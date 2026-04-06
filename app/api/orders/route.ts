@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAuth, requireRole } from '@/lib/auth'
-import { orderSchema, paginationSchema } from '@/lib/validations'
+import { orderSchema, paginationSchema, parsePagination } from '@/lib/validations'
 import { successResponse, errorResponse, handleApiError } from '@/lib/api-response'
 import { generateOrderNumber, getPaginationMeta } from '@/lib/utils'
 
@@ -9,10 +9,7 @@ export async function GET(req: NextRequest) {
   try {
     const { userId, role } = requireAuth(req)
     const { searchParams } = new URL(req.url)
-    const { page, limit } = paginationSchema.parse({
-      page: searchParams.get('page'),
-      limit: searchParams.get('limit'),
-    })
+    const { page, limit } = parsePagination(searchParams)
 
     // Admin sees all orders, users see their own
     const where = role === 'ADMIN' ? {} : { userId }

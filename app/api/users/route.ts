@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireRole } from '@/lib/auth'
-import { paginationSchema } from '@/lib/validations'
+import { paginationSchema, parsePagination } from '@/lib/validations'
 import { successResponse, handleApiError } from '@/lib/api-response'
 import { getPaginationMeta } from '@/lib/utils'
 
@@ -9,20 +9,23 @@ export async function GET(req: NextRequest) {
   try {
     requireRole(req, ['ADMIN'])
     const { searchParams } = new URL(req.url)
-    const { page, limit, search } = paginationSchema.parse({
-      page: searchParams.get('page'),
-      limit: searchParams.get('limit'),
-      search: searchParams.get('search'),
-    })
+    const { page, limit, search } = parsePagination(searchParams)
+    const role = searchParams.get('role')
 
-    const where = search
-      ? {
-          OR: [
-            { name: { contains: search, mode: 'insensitive' as const } },
-            { email: { contains: search, mode: 'insensitive' as const } },
-          ],
-        }
-      : {}
+    const where: any = {}
+    
+    // Add search filter
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: 'insensitive' as const } },
+        { email: { contains: search, mode: 'insensitive' as const } },
+      ]
+    }
+    
+    // Add role filter
+    if (role && ['CUSTOMER', 'USER', 'ADMIN'].includes(role)) {
+      where.role = role
+    }
 
     const [users, total] = await Promise.all([
       prisma.user.findMany({

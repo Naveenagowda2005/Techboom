@@ -3,12 +3,17 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
 
+const customerNavItems = [
+  { href: '/dashboard', label: 'Overview', icon: '📊' },
+  { href: '/dashboard/services', label: 'Book Services', icon: '⚡' },
+  { href: '/dashboard/orders', label: 'My Orders', icon: '📦' },
+  { href: '/dashboard/profile', label: 'Profile', icon: '👤' },
+]
+
 const userNavItems = [
   { href: '/dashboard', label: 'Overview', icon: '📊' },
-  { href: '/dashboard/orders', label: 'My Orders', icon: '📦' },
   { href: '/dashboard/referrals', label: 'Referrals', icon: '🔗' },
-  { href: '/dashboard/wallet', label: 'Wallet', icon: '💰' },
-  { href: '/dashboard/services', label: 'Services', icon: '⚡' },
+  { href: '/dashboard/wallet', label: 'Earnings', icon: '💰' },
   { href: '/dashboard/profile', label: 'Profile', icon: '👤' },
 ]
 
@@ -29,10 +34,15 @@ interface SidebarProps {
   onClose?: () => void
 }
 
-export default function Sidebar({ role = 'USER', userName = 'User', onClose }: SidebarProps) {
+export default function Sidebar({ role = 'CUSTOMER', userName = 'User', onClose }: SidebarProps) {
   const pathname = usePathname()
   const router = useRouter()
-  const navItems = role === 'ADMIN' ? adminNavItems : userNavItems
+  
+  // Select nav items based on role
+  const navItems = 
+    role === 'ADMIN' ? adminNavItems :
+    role === 'USER' ? userNavItems :
+    customerNavItems
 
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' })

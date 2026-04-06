@@ -3,16 +3,13 @@ import { prisma } from '@/lib/prisma'
 import { requireAuth } from '@/lib/auth'
 import { successResponse, handleApiError } from '@/lib/api-response'
 import { getPaginationMeta } from '@/lib/utils'
-import { paginationSchema } from '@/lib/validations'
+import { paginationSchema, parsePagination } from '@/lib/validations'
 
 export async function GET(req: NextRequest) {
   try {
     const { userId, role } = requireAuth(req)
     const { searchParams } = new URL(req.url)
-    const { page, limit } = paginationSchema.parse({
-      page: searchParams.get('page'),
-      limit: searchParams.get('limit'),
-    })
+    const { page, limit } = parsePagination(searchParams)
 
     const where = role === 'ADMIN' ? {} : { referrerId: userId }
 

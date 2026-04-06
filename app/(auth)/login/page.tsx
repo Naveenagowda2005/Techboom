@@ -33,11 +33,20 @@ export default function LoginPage() {
         return
       }
 
-      // Store token in localStorage for client-side use
-      localStorage.setItem('access_token', data.data.accessToken)
-      localStorage.setItem('user', JSON.stringify(data.data.user))
+      // Check if user has CUSTOMER role
+      if (data.data?.user?.role !== 'CUSTOMER') {
+        setApiError('Invalid credentials. This login is for customers only.')
+        return
+      }
 
-      router.push('/dashboard')
+      // Store token in localStorage for client-side use
+      if (data.data?.accessToken) {
+        localStorage.setItem('access_token', data.data.accessToken)
+        localStorage.setItem('user', JSON.stringify(data.data.user))
+      }
+      
+      // Redirect to dashboard
+      window.location.href = '/dashboard'
     } catch {
       setApiError('Something went wrong. Please try again.')
     } finally {
@@ -65,7 +74,7 @@ export default function LoginPage() {
             </span>
           </Link>
           <h1 className="text-2xl font-bold text-white mt-6 mb-2">Welcome back</h1>
-          <p className="text-white/50 text-sm">Sign in to your account</p>
+          <p className="text-white/50 text-sm">Sign in to your customer account</p>
         </div>
 
         {/* Form Card */}
@@ -117,6 +126,15 @@ export default function LoginPage() {
               Sign up free
             </Link>
           </p>
+
+          <div className="mt-4 pt-4 border-t border-white/10 text-center">
+            <p className="text-xs text-white/40">
+              Are you a referrer?{' '}
+              <Link href="/user/login" className="text-purple-400 hover:text-purple-300">
+                Login here
+              </Link>
+            </p>
+          </div>
         </div>
       </div>
     </div>

@@ -16,6 +16,12 @@ export async function POST(req: NextRequest) {
     }
 
     const { name, email, password, phone, referralCode: refCode } = parsed.data
+    
+    // Get role from request body, default to CUSTOMER for public signups
+    const requestedRole = body.role || 'CUSTOMER'
+    
+    // Only allow USER and CUSTOMER roles from public registration
+    const role = (requestedRole === 'USER' || requestedRole === 'CUSTOMER') ? requestedRole : 'CUSTOMER'
 
     // Check if email already exists
     const existing = await prisma.user.findUnique({ where: { email } })
@@ -40,6 +46,7 @@ export async function POST(req: NextRequest) {
         email,
         password: hashedPassword,
         phone,
+        role, // Use the determined role
         referralCode: newReferralCode,
         referredBy: refCode || null,
       },

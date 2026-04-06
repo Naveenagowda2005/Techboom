@@ -36,9 +36,19 @@ export default function Footer() {
                 Techboom
               </span>
             </Link>
-            <p className="text-white/50 text-sm leading-relaxed max-w-xs">
+            <p className="text-white/50 text-sm leading-relaxed max-w-xs mb-4">
               Your all-in-one digital growth partner. From app development to GST filing — we&apos;ve got you covered.
             </p>
+            <div className="space-y-2 text-sm">
+              <a href="tel:+917760322345" className="flex items-center gap-2 text-white/50 hover:text-purple-400 transition-colors">
+                <span>📞</span>
+                <span>+91 7760322345</span>
+              </a>
+              <a href="mailto:support@techboom.com" className="flex items-center gap-2 text-white/50 hover:text-purple-400 transition-colors">
+                <span>✉️</span>
+                <span>support@techboom.com</span>
+              </a>
+            </div>
             <div className="flex gap-3 mt-6">
               {['Twitter', 'LinkedIn', 'Instagram'].map((social) => (
                 <a

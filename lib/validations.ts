@@ -8,7 +8,7 @@ export const registerSchema = z.object({
     .min(8, 'Password must be at least 8 characters')
     .regex(/[A-Z]/, 'Must contain uppercase letter')
     .regex(/[0-9]/, 'Must contain a number'),
-  phone: z.string().optional(),
+  phone: z.string().min(10, 'Phone number must be at least 10 digits'),
   referralCode: z.string().optional(),
 })
 
@@ -20,7 +20,7 @@ export const loginSchema = z.object({
 export const orderSchema = z.object({
   serviceId: z.string().uuid('Invalid service ID'),
   notes: z.string().optional(),
-  requirements: z.record(z.unknown()).optional(),
+  requirements: z.record(z.string(), z.unknown()).optional(),
   referralCode: z.string().optional(),
 })
 
@@ -59,3 +59,11 @@ export const paginationSchema = z.object({
   limit: z.coerce.number().int().positive().max(100).default(10),
   search: z.string().optional(),
 })
+
+export function parsePagination(searchParams: URLSearchParams) {
+  return paginationSchema.parse({
+    page: searchParams.get('page') ?? undefined,
+    limit: searchParams.get('limit') ?? undefined,
+    search: searchParams.get('search') ?? undefined,
+  })
+}

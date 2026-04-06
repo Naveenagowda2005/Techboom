@@ -1,22 +1,19 @@
 import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireRole } from '@/lib/auth'
-import { serviceSchema, paginationSchema } from '@/lib/validations'
+import { serviceSchema, parsePagination } from '@/lib/validations'
 import { successResponse, errorResponse, handleApiError } from '@/lib/api-response'
 import { getPaginationMeta } from '@/lib/utils'
 
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url)
-    const { page, limit, search } = paginationSchema.parse({
-      page: searchParams.get('page'),
-      limit: searchParams.get('limit'),
-      search: searchParams.get('search'),
-    })
+    const { page, limit, search } = parsePagination(searchParams)
 
     const category = searchParams.get('category')
-    const where = {
-      isActive: true,
+    const showAll = searchParams.get('showAll') === 'true' // For admin to see all services
+    
+    const where: any = {
       ...(search && {
         OR: [
           { name: { contains: search, mode: 'insensitive' as const } },
@@ -24,6 +21,11 @@ export async function GET(req: NextRequest) {
         ],
       }),
       ...(category && { category }),
+    }
+
+    // Only add isActive filter if showAll is not true
+    if (!showAll) {
+      where.isActive = true
     }
 
     const [services, total] = await Promise.all([

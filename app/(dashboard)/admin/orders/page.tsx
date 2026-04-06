@@ -23,6 +23,7 @@ export default function AdminOrdersPage() {
   const [page, setPage] = useState(1)
   const [meta, setMeta] = useState({ total: 0, totalPages: 1 })
   const [updating, setUpdating] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState<string | null>(null)
 
   const fetchOrders = (p = page) => {
     setLoading(true)
@@ -47,6 +48,32 @@ export default function AdminOrdersPage() {
     setUpdating(null)
   }
 
+  const handleDelete = async (orderId: string) => {
+    if (!confirm('Are you sure you want to delete this unpaid order?')) return
+    
+    setDeleting(orderId)
+    const token = localStorage.getItem('access_token')
+    
+    try {
+      const res = await fetch(`/api/orders/${orderId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      
+      const data = await res.json()
+      
+      if (data.success) {
+        fetchOrders()
+      } else {
+        alert(data.message || 'Failed to delete order')
+      }
+    } catch (error) {
+      alert('Failed to delete order')
+    } finally {
+      setDeleting(null)
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -69,7 +96,7 @@ export default function AdminOrdersPage() {
                   <th className="px-6 py-4 font-medium">Payment</th>
                   <th className="px-6 py-4 font-medium">Status</th>
                   <th className="px-6 py-4 font-medium">Date</th>
-                  <th className="px-6 py-4 font-medium">Update</th>
+                  <th className="px-6 py-4 font-medium">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
@@ -90,14 +117,32 @@ export default function AdminOrdersPage() {
                     <td className="px-6 py-4"><OrderStatusBadge status={order.status} /></td>
                     <td className="px-6 py-4 text-white/40">{formatDate(order.createdAt)}</td>
                     <td className="px-6 py-4">
-                      <select
-                        value={order.status}
-                        onChange={(e) => updateStatus(order.id, e.target.value)}
-                        disabled={updating === order.id}
-                        className="bg-white/5 border border-white/10 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-purple-500/60 disabled:opacity-50"
-                      >
-                        {STATUSES.map(s => <option key={s} value={s} className="bg-[#0f0a1e]">{s}</option>)}
-                      </select>
+                      <div className="flex items-center gap-2">
+                        <a
+                          href={`/admin/orders/${order.id}`}
+                          className="text-purple-400 hover:text-purple-300 text-xs font-medium"
+                        >
+                          View →
+                        </a>
+                        <select
+                          value={order.status}
+                          onChange={(e) => updateStatus(order.id, e.target.value)}
+                          disabled={updating === order.id}
+                          className="bg-white/5 border border-white/10 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-purple-500/60 disabled:opacity-50 [&>option]:bg-gray-900 [&>option]:text-white"
+                        >
+                          {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+                        </select>
+                        {order.status === 'PENDING' && (
+                          <button
+                            onClick={() => handleDelete(order.id)}
+                            disabled={deleting === order.id}
+                            className="bg-red-500/20 hover:bg-red-500/30 text-red-400 px-2 py-1 rounded-lg text-xs transition-colors disabled:opacity-50"
+                            title="Delete unpaid order"
+                          >
+                            {deleting === order.id ? '...' : '🗑️'}
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}

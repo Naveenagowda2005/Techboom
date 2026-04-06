@@ -26,11 +26,27 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    console.log('[AdminDashboard] Fetching stats...')
     const token = localStorage.getItem('access_token')
-    fetch('/api/dashboard/stats', { headers: { Authorization: `Bearer ${token}` } })
+    const cacheBuster = Date.now()
+    fetch(`/api/dashboard/stats?_=${cacheBuster}`, { 
+      headers: { Authorization: `Bearer ${token}` } 
+    })
       .then((r) => r.json())
-      .then((d) => { if (d.success) setStats(d.data) })
-      .finally(() => setLoading(false))
+      .then((d) => {
+        console.log('[AdminDashboard] API Response:', d)
+        if (d.success) {
+          console.log('[AdminDashboard] Setting stats:', d.data)
+          setStats(d.data)
+        } else {
+          console.error('[AdminDashboard] API Error:', d.message)
+        }
+      })
+      .catch((err) => console.error('[AdminDashboard] Fetch error:', err))
+      .finally(() => {
+        console.log('[AdminDashboard] Loading complete')
+        setLoading(false)
+      })
   }, [])
 
   return (

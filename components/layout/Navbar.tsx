@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
 
 const navLinks = [
@@ -14,16 +14,54 @@ const navLinks = [
   { href: '/store', label: 'Store' },
 ]
 
+interface User {
+  id: string
+  name: string
+  email: string
+  role: string
+}
+
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [user, setUser] = useState<User | null>(null)
+  const [dropdownOpen, setDropdownOpen] = useState(false)
   const pathname = usePathname()
+  const router = useRouter()
 
   useEffect(() => {
     const handler = () => setScrolled(window.scrollY > 20)
     window.addEventListener('scroll', handler)
     return () => window.removeEventListener('scroll', handler)
   }, [])
+
+  useEffect(() => {
+    // Check if user is logged in
+    const fetchUser = async () => {
+      try {
+        const res = await fetch('/api/auth/me')
+        if (res.ok) {
+          const data = await res.json()
+          setUser(data.data)
+        }
+      } catch {
+        // User not logged in
+      }
+    }
+    fetchUser()
+  }, [])
+
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' })
+      localStorage.removeItem('access_token')
+      localStorage.removeItem('user')
+      setUser(null)
+      router.push('/')
+    } catch {
+      // Handle error
+    }
+  }
 
   return (
     <nav
@@ -62,20 +100,67 @@ export default function Navbar() {
             ))}
           </div>
 
-          {/* CTA Buttons */}
+          {/* CTA Buttons / User Menu */}
           <div className="hidden md:flex items-center gap-3">
-            <Link
-              href="/login"
-              className="text-sm font-medium text-white/70 hover:text-white transition-colors px-4 py-2"
-            >
-              Login
-            </Link>
-            <Link
-              href="/signup"
-              className="btn-primary text-sm px-5 py-2.5"
-            >
-              Get Started
-            </Link>
+            {user ? (
+              <div className="relative">
+                <button
+                  onClick={() => setDropdownOpen(!dropdownOpen)}
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg text-white/90 hover:bg-white/5 transition-colors"
+                >
+                  <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-yellow-500 rounded-full flex items-center justify-center">
+                    <span className="text-white font-bold text-sm">{user.name.charAt(0).toUpperCase()}</span>
+                  </div>
+                  <span className="text-sm font-medium">{user.name}</span>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                
+                {dropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-48 bg-[#1a1333] border border-white/10 rounded-xl shadow-xl py-2">
+                    <Link
+                      href={user.role === 'ADMIN' ? '/admin' : '/dashboard'}
+                      className="block px-4 py-2 text-sm text-white/70 hover:text-white hover:bg-white/5"
+                      onClick={() => setDropdownOpen(false)}
+                    >
+                      Dashboard
+                    </Link>
+                    <Link
+                      href="/dashboard/profile"
+                      className="block px-4 py-2 text-sm text-white/70 hover:text-white hover:bg-white/5"
+                      onClick={() => setDropdownOpen(false)}
+                    >
+                      Profile
+                    </Link>
+                    <button
+                      onClick={() => {
+                        setDropdownOpen(false)
+                        handleLogout()
+                      }}
+                      className="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-white/5"
+                    >
+                      Logout
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  className="text-sm font-medium text-white/70 hover:text-white transition-colors px-4 py-2"
+                >
+                  Login
+                </Link>
+                <Link
+                  href="/signup"
+                  className="btn-primary text-sm px-5 py-2.5"
+                >
+                  Get Started
+                </Link>
+              </>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -115,12 +200,35 @@ export default function Navbar() {
               </Link>
             ))}
             <div className="pt-3 flex flex-col gap-2">
-              <Link href="/login" onClick={() => setMobileOpen(false)} className="btn-outline text-center text-sm py-2.5">
-                Login
-              </Link>
-              <Link href="/signup" onClick={() => setMobileOpen(false)} className="btn-primary text-center text-sm py-2.5">
-                Get Started
-              </Link>
+              {user ? (
+                <>
+                  <Link
+                    href={user.role === 'ADMIN' ? '/admin' : '/dashboard'}
+                    onClick={() => setMobileOpen(false)}
+                    className="btn-outline text-center text-sm py-2.5"
+                  >
+                    Dashboard
+                  </Link>
+                  <button
+                    onClick={() => {
+                      setMobileOpen(false)
+                      handleLogout()
+                    }}
+                    className="btn-outline text-center text-sm py-2.5 text-red-400"
+                  >
+                    Logout
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link href="/login" onClick={() => setMobileOpen(false)} className="btn-outline text-center text-sm py-2.5">
+                    Login
+                  </Link>
+                  <Link href="/signup" onClick={() => setMobileOpen(false)} className="btn-primary text-center text-sm py-2.5">
+                    Get Started
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </div>

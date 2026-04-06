@@ -30,13 +30,28 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     const { role } = requireAuth(req)
     if (role !== 'ADMIN') return forbiddenResponse()
 
-    const { status } = await req.json()
+    const { status, notes } = await req.json()
     const validStatuses = ['PENDING', 'CONFIRMED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'REFUNDED']
     if (!validStatuses.includes(status)) return errorResponse('Invalid status', 400)
 
+    // Get existing order to append notes
+    const existingOrder = await prisma.order.findUnique({ where: { id: params.id } })
+    if (!existingOrder) return notFoundResponse('Order not found')
+
+    // Append new notes to existing notes with timestamp
+    let updatedNotes = existingOrder.notes || ''
+    if (notes && notes.trim()) {
+      const timestamp = new Date().toLocaleString()
+      const newNote = `[${timestamp}] Status changed to ${status}: ${notes}`
+      updatedNotes = updatedNotes ? `${updatedNotes}\n\n${newNote}` : newNote
+    }
+
     const order = await prisma.order.update({
       where: { id: params.id },
-      data: { status },
+      data: { 
+        status,
+        notes: updatedNotes || existingOrder.notes
+      },
     })
 
     // Auto commission on order completion
@@ -74,6 +89,41 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     }
 
     return successResponse(order, 'Order updated')
+  } catch (error) {
+    return handleApiError(error)
+  }
+}
+
+export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+  try {
+    const { userId, role } = requireAuth(req)
+
+    const order = await prisma.order.findUnique({
+      where: { id: params.id },
+      include: { payment: true },
+    })
+
+    if (!order) return notFoundResponse('Order not found')
+
+    // Only allow deletion of PENDING orders (unpaid)
+    if (order.status !== 'PENDING') {
+      return errorResponse('Only pending orders can be deleted', 400)
+    }
+
+    // Check permissions: customers can delete their own pending orders, admins can delete any
+    if (role !== 'ADMIN' && order.userId !== userId) {
+      return forbiddenResponse()
+    }
+
+    // Delete associated payment record if exists
+    if (order.payment) {
+      await prisma.payment.delete({ where: { id: order.payment.id } })
+    }
+
+    // Delete the order
+    await prisma.order.delete({ where: { id: params.id } })
+
+    return successResponse(null, 'Order deleted successfully')
   } catch (error) {
     return handleApiError(error)
   }

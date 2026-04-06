@@ -9,20 +9,16 @@
     --background: 15 10 30;
     --foreground: 255 255 255;
     --primary: 147 51 234;
-    --primary-dark: 109 40 217;
     --accent: 234 179 8;
-    --accent-dark: 202 138 4;
-    --card: 26 16 50;
-    --card-border: 60 40 100;
-    --muted: 120 100 160;
   }
 
   * {
-    @apply border-border;
+    box-sizing: border-box;
   }
 
   body {
-    @apply bg-[#0f0a1e] text-white font-poppins antialiased;
+    @apply bg-[#0f0a1e] text-white antialiased;
+    font-family: 'Poppins', sans-serif;
     background-image: 
       radial-gradient(ellipse at 20% 50%, rgba(147, 51, 234, 0.08) 0%, transparent 50%),
       radial-gradient(ellipse at 80% 20%, rgba(234, 179, 8, 0.05) 0%, transparent 50%);
@@ -49,23 +45,26 @@
   .btn-primary {
     @apply bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 
            text-white font-semibold px-6 py-3 rounded-xl transition-all duration-200 
-           shadow-lg shadow-purple-900/30 hover:shadow-purple-700/40 hover:-translate-y-0.5;
+           shadow-lg shadow-purple-900/30 hover:shadow-purple-700/40 hover:-translate-y-0.5
+           inline-flex items-center justify-center;
   }
 
   .btn-accent {
     @apply bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-400 hover:to-yellow-500 
            text-black font-semibold px-6 py-3 rounded-xl transition-all duration-200 
-           shadow-lg shadow-yellow-900/30 hover:-translate-y-0.5;
+           shadow-lg shadow-yellow-900/30 hover:-translate-y-0.5
+           inline-flex items-center justify-center;
   }
 
   .btn-outline {
     @apply border border-purple-500/50 hover:border-purple-400 hover:bg-purple-500/10 
-           text-white font-semibold px-6 py-3 rounded-xl transition-all duration-200;
+           text-white font-semibold px-6 py-3 rounded-xl transition-all duration-200
+           inline-flex items-center justify-center;
   }
 
   .input-field {
     @apply w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white 
-           placeholder-white/30 focus:outline-none focus:border-purple-500/60 focus:bg-white/8
+           placeholder-white/30 focus:outline-none focus:border-purple-500/60
            transition-all duration-200;
   }
 

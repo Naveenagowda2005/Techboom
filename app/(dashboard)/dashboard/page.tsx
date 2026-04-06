@@ -8,9 +8,14 @@ import Link from 'next/link'
 
 interface DashboardStats {
   totalOrders: number
-  totalEarnings: number
-  pendingCommissions: number
-  walletBalance: number
+  // Customer stats
+  totalSpent?: number
+  activeOrders?: number
+  completedOrders?: number
+  // Referrer stats
+  totalEarnings?: number
+  pendingCommissions?: number
+  walletBalance?: number
   recentOrders: Array<{
     id: string
     orderNumber: string
@@ -24,7 +29,7 @@ interface DashboardStats {
 export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [loading, setLoading] = useState(true)
-  const [user, setUser] = useState<{ referralCode: string; name: string } | null>(null)
+  const [user, setUser] = useState<{ referralCode: string; name: string; role: string } | null>(null)
 
   useEffect(() => {
     const stored = localStorage.getItem('user')
@@ -47,11 +52,22 @@ export default function DashboardPage() {
     navigator.clipboard.writeText(referralLink)
   }
 
+  const isReferrer = user?.role === 'USER'
+  const isCustomer = user?.role === 'CUSTOMER'
+
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-black text-white">Dashboard</h1>
-        <p className="text-white/50 text-sm mt-1">Welcome back! Here&apos;s your overview.</p>
+        <h1 className="text-2xl font-black text-white">
+          {isReferrer ? 'Referrer Dashboard' : isCustomer ? 'Customer Dashboard' : 'Dashboard'}
+        </h1>
+        <p className="text-white/50 text-sm mt-1">
+          {isReferrer 
+            ? 'Track your referrals and earnings' 
+            : isCustomer 
+            ? 'Manage your orders and services' 
+            : 'Welcome back! Here\'s your overview.'}
+        </p>
       </div>
 
       {/* Stats Grid */}
@@ -61,15 +77,25 @@ export default function DashboardPage() {
         ) : (
           <>
             <StatsCard title="Total Orders" value={stats?.totalOrders || 0} icon="📦" color="purple" />
-            <StatsCard title="Total Earnings" value={formatCurrency(stats?.totalEarnings || 0)} icon="💰" color="yellow" />
-            <StatsCard title="Wallet Balance" value={formatCurrency(stats?.walletBalance || 0)} icon="💳" color="green" />
-            <StatsCard title="Pending Commissions" value={stats?.pendingCommissions || 0} icon="⏳" color="blue" />
+            {isReferrer ? (
+              <>
+                <StatsCard title="Total Earnings" value={formatCurrency(stats?.totalEarnings || 0)} icon="💰" color="yellow" />
+                <StatsCard title="Wallet Balance" value={formatCurrency(stats?.walletBalance || 0)} icon="💳" color="green" />
+                <StatsCard title="Pending Commissions" value={stats?.pendingCommissions || 0} icon="⏳" color="blue" />
+              </>
+            ) : (
+              <>
+                <StatsCard title="Total Spent" value={formatCurrency(stats?.totalSpent || 0)} icon="💰" color="yellow" />
+                <StatsCard title="Active Orders" value={stats?.activeOrders || 0} icon="⏳" color="blue" />
+                <StatsCard title="Completed" value={stats?.completedOrders || 0} icon="✅" color="green" />
+              </>
+            )}
           </>
         )}
       </div>
 
-      {/* Referral Link */}
-      {user && (
+      {/* Referral Link - Only for Referrers (USER role) */}
+      {user && isReferrer && (
         <div className="bg-gradient-to-r from-purple-900/40 to-yellow-900/10 border border-purple-500/30 rounded-2xl p-6">
           <h3 className="text-lg font-bold text-white mb-2">Your Referral Link</h3>
           <p className="text-white/50 text-sm mb-4">Share this link and earn 10% commission on every order.</p>
@@ -83,6 +109,24 @@ export default function DashboardPage() {
             >
               Copy Link
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Quick Actions - Only for Customers */}
+      {isCustomer && (
+        <div className="bg-gradient-to-r from-purple-900/40 to-yellow-900/10 border border-purple-500/30 rounded-2xl p-6">
+          <h3 className="text-lg font-bold text-white mb-4">Quick Actions</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <Link href="/dashboard/services" className="btn-primary text-center py-3">
+              📱 Book Service
+            </Link>
+            <Link href="/dashboard/orders" className="btn-outline text-center py-3">
+              📦 View Orders
+            </Link>
+            <Link href="/dashboard/profile" className="btn-outline text-center py-3">
+              👤 My Profile
+            </Link>
           </div>
         </div>
       )}
@@ -102,9 +146,11 @@ export default function DashboardPage() {
           <div className="text-center py-12">
             <div className="text-4xl mb-3">📦</div>
             <p className="text-white/50">No orders yet</p>
-            <Link href="/dashboard/services" className="btn-primary text-sm mt-4 inline-flex">
-              Browse Services
-            </Link>
+            {isCustomer && (
+              <Link href="/dashboard/services" className="btn-primary text-sm mt-4 inline-flex">
+                Browse Services
+              </Link>
+            )}
           </div>
         ) : (
           <div className="overflow-x-auto">

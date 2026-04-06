@@ -45,7 +45,8 @@ function SignupForm() {
 
       localStorage.setItem('access_token', data.data.accessToken)
       localStorage.setItem('user', JSON.stringify(data.data.user))
-      router.push('/dashboard')
+      // Use window.location for a full page reload to ensure cookies are set
+      window.location.href = '/dashboard'
     } catch {
       setApiError('Something went wrong. Please try again.')
     } finally {
@@ -71,7 +72,7 @@ function SignupForm() {
             </span>
           </Link>
           <h1 className="text-2xl font-bold text-white mt-6 mb-2">Create your account</h1>
-          <p className="text-white/50 text-sm">Start growing your business today</p>
+          <p className="text-white/50 text-sm">Start booking services today</p>
         </div>
 
         <div className="bg-white/5 border border-white/10 rounded-2xl p-8">
@@ -115,11 +116,13 @@ function SignupForm() {
               required
             />
             <Input
-              label="Phone (optional)"
+              label="Phone Number"
               type="tel"
               placeholder="+91 98765 43210"
               value={form.phone}
               onChange={(e) => setForm({ ...form, phone: e.target.value })}
+              error={errors.phone?.[0]}
+              required
             />
             <Input
               label="Referral Code (optional)"
@@ -146,6 +149,15 @@ function SignupForm() {
               Sign in
             </Link>
           </p>
+
+          <div className="mt-4 pt-4 border-t border-white/10 text-center">
+            <p className="text-xs text-white/40">
+              Want to become a referrer?{' '}
+              <Link href="/user/signup" className="text-purple-400 hover:text-purple-300">
+                Sign up here
+              </Link>
+            </p>
+          </div>
         </div>
       </div>
     </div>

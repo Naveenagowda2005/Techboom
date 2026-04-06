@@ -24,11 +24,13 @@ export default function AdminUsersPage() {
   const [search, setSearch] = useState('')
   const [meta, setMeta] = useState({ total: 0, totalPages: 1 })
   const [page, setPage] = useState(1)
+  const [roleFilter, setRoleFilter] = useState<'ALL' | 'CUSTOMER' | 'USER' | 'ADMIN'>('ALL')
 
-  const fetchUsers = (q = search, p = page) => {
+  const fetchUsers = (q = search, p = page, role = roleFilter) => {
     setLoading(true)
     const token = localStorage.getItem('access_token')
-    fetch(`/api/users?page=${p}&limit=10&search=${q}`, {
+    const roleParam = role !== 'ALL' ? `&role=${role}` : ''
+    fetch(`/api/users?page=${p}&limit=10&search=${q}${roleParam}`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((r) => r.json())
@@ -41,12 +43,19 @@ export default function AdminUsersPage() {
       .finally(() => setLoading(false))
   }
 
-  useEffect(() => { fetchUsers() }, [page])
+  useEffect(() => { 
+    fetchUsers(search, page, roleFilter) 
+  }, [page, roleFilter])
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
     setPage(1)
-    fetchUsers(search, 1)
+    fetchUsers(search, 1, roleFilter)
+  }
+
+  const handleRoleFilter = (role: 'ALL' | 'CUSTOMER' | 'USER' | 'ADMIN') => {
+    setRoleFilter(role)
+    setPage(1)
   }
 
   const toggleActive = async (userId: string, isActive: boolean) => {
@@ -77,6 +86,50 @@ export default function AdminUsersPage() {
         />
         <button type="submit" className="btn-primary text-sm px-5 whitespace-nowrap">Search</button>
       </form>
+
+      {/* Role Filter Tabs */}
+      <div className="flex gap-2 border-b border-white/10 pb-4">
+        <button
+          onClick={() => handleRoleFilter('ALL')}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            roleFilter === 'ALL'
+              ? 'bg-purple-500 text-white'
+              : 'bg-white/5 text-white/60 hover:bg-white/10'
+          }`}
+        >
+          All Users ({meta.total})
+        </button>
+        <button
+          onClick={() => handleRoleFilter('CUSTOMER')}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            roleFilter === 'CUSTOMER'
+              ? 'bg-blue-500 text-white'
+              : 'bg-white/5 text-white/60 hover:bg-white/10'
+          }`}
+        >
+          Customers
+        </button>
+        <button
+          onClick={() => handleRoleFilter('USER')}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            roleFilter === 'USER'
+              ? 'bg-purple-500 text-white'
+              : 'bg-white/5 text-white/60 hover:bg-white/10'
+          }`}
+        >
+          Referrers
+        </button>
+        <button
+          onClick={() => handleRoleFilter('ADMIN')}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            roleFilter === 'ADMIN'
+              ? 'bg-red-500 text-white'
+              : 'bg-white/5 text-white/60 hover:bg-white/10'
+          }`}
+        >
+          Admins
+        </button>
+      </div>
 
       <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden">
         {loading ? (

@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
       // Admin stats
       const [
         totalUsers, totalOrders, totalRevenue, pendingOrders,
-        recentOrders, monthlyRevenue
+        recentOrders
       ] = await Promise.all([
         prisma.user.count(),
         prisma.order.count(),
@@ -25,18 +25,6 @@ export async function GET(req: NextRequest) {
             service: { select: { name: true } },
           },
         }),
-        // Monthly revenue for last 6 months
-        prisma.$queryRaw`
-          SELECT 
-            DATE_TRUNC('month', created_at) as month,
-            SUM(amount) as revenue,
-            COUNT(*) as count
-          FROM payments
-          WHERE status = 'SUCCESS' 
-            AND created_at >= NOW() - INTERVAL '6 months'
-          GROUP BY DATE_TRUNC('month', created_at)
-          ORDER BY month ASC
-        `,
       ])
 
       return successResponse({
@@ -45,13 +33,64 @@ export async function GET(req: NextRequest) {
         totalRevenue: totalRevenue._sum.amount || 0,
         pendingOrders,
         recentOrders,
-        monthlyRevenue,
       })
     }
 
     // User stats
+    const user = await prisma.user.findUnique({ 
+      where: { id: userId }, 
+      select: { walletBalance: true, role: true } 
+    })
+
+    if (user?.role === 'CUSTOMER') {
+      // Customer-specific stats
+      const [
+        totalOrders,
+        totalSpent,
+        activeOrders,
+        completedOrders
+      ] = await Promise.all([
+        prisma.order.count({ where: { userId } }),
+        prisma.payment.aggregate({
+          where: { 
+            order: { userId },
+            status: 'SUCCESS'
+          },
+          _sum: { amount: true },
+        }),
+        prisma.order.count({ 
+          where: { 
+            userId,
+            status: { in: ['CONFIRMED', 'IN_PROGRESS'] }
+          } 
+        }),
+        prisma.order.count({ 
+          where: { 
+            userId,
+            status: 'COMPLETED'
+          } 
+        }),
+      ])
+
+      const recentOrders = await prisma.order.findMany({
+        where: { userId },
+        take: 5,
+        orderBy: { createdAt: 'desc' },
+        include: { service: { select: { name: true, category: true } } },
+      })
+
+      return successResponse({
+        totalOrders,
+        totalSpent: totalSpent._sum.amount || 0,
+        activeOrders,
+        completedOrders,
+        recentOrders,
+      })
+    }
+
+    // Referrer (USER role) stats
     const [
-      totalOrders, totalEarnings, pendingCommissions, walletBalance
+      totalOrders, totalEarnings, pendingCommissions
     ] = await Promise.all([
       prisma.order.count({ where: { userId } }),
       prisma.referral.aggregate({
@@ -59,7 +98,6 @@ export async function GET(req: NextRequest) {
         _sum: { commissionAmount: true },
       }),
       prisma.referral.count({ where: { referrerId: userId, isPaid: false } }),
-      prisma.user.findUnique({ where: { id: userId }, select: { walletBalance: true } }),
     ])
 
     const recentOrders = await prisma.order.findMany({
@@ -73,7 +111,7 @@ export async function GET(req: NextRequest) {
       totalOrders,
       totalEarnings: totalEarnings._sum.commissionAmount || 0,
       pendingCommissions,
-      walletBalance: walletBalance?.walletBalance || 0,
+      walletBalance: user?.walletBalance || 0,
       recentOrders,
     })
   } catch (error) {

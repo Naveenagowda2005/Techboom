@@ -2,8 +2,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import Input from '@/components/ui/Input'
-import Button from '@/components/ui/Button'
+import { Input, Button } from '@/components/ui'
 
 export default function UserLoginPage() {
   const router = useRouter()

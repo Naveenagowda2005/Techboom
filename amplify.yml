@@ -4,6 +4,7 @@ frontend:
     preBuild:
       commands:
         - npm ci --cache .npm --prefer-offline
+        - ls -la components/ui/
         - npx prisma generate
     build:
       commands:

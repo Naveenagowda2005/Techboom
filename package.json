@@ -14,7 +14,7 @@
     "db:seed": "ts-node prisma/seed.ts"
   },
   "dependencies": {
-    "@prisma/client": "^7.5.0",
+    "@prisma/client": "^5.22.0",
     "@radix-ui/react-dialog": "^1.1.15",
     "@radix-ui/react-dropdown-menu": "^2.1.16",
     "@radix-ui/react-toast": "^1.2.15",
@@ -31,7 +31,7 @@
     "lucide-react": "^1.7.0",
     "next": "14.2.35",
     "next-cloudinary": "^6.17.5",
-    "prisma": "^7.5.0",
+    "prisma": "^5.22.0",
     "razorpay": "^2.9.6",
     "react": "^18",
     "react-dom": "^18",

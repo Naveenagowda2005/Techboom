@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireRole } from '@/lib/auth'
 
-export const runtime = 'edge'
+// Removed edge runtime to use Node.js runtime for JWT compatibility
 
 export async function POST(req: NextRequest) {
   try {

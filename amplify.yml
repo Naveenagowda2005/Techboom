@@ -3,8 +3,9 @@ frontend:
   phases:
     preBuild:
       commands:
+        # Set dummy DATABASE_URL for Prisma generation during build
+        - export DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy"
         - npm ci --cache .npm --prefer-offline
-        - ls -la components/ui/
         - npx prisma generate
     build:
       commands:

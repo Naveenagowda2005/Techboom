@@ -66,14 +66,36 @@ Once deployed, the app should work. If you still see the error:
 
 ## Common Issues
 
+### Issue: DATABASE_URL appears on multiple lines (4 lines) in Amplify console
+**This is the most common issue!**
+
+**Problem**: When you paste the DATABASE_URL, AWS Amplify might insert line breaks, which breaks the connection string.
+
+**Solution**:
+1. Delete the DATABASE_URL variable completely
+2. Click "Add environment variable"
+3. Key: `DATABASE_URL`
+4. Value: Paste this ENTIRE string as ONE LINE (no Enter key):
+   ```
+   postgresql://neondb_owner:npg_Vq72TSCxcZmj@ep-aged-cloud-ancpsk8y-pooler.c-6.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require
+   ```
+5. Click "Save" (don't press Enter while typing)
+6. The UI might DISPLAY it wrapped across multiple lines - that's okay for display
+7. But when you click "Edit" on the variable, it should be ONE continuous line
+8. If you see actual line breaks when editing, delete and try again
+9. After saving, click "Redeploy this version"
+
 ### Issue: DATABASE_URL appears truncated in Amplify console
 **Solution**: Delete the variable and re-add it, making sure to paste the complete connection string
 
 ### Issue: Changes don't appear after redeploy
-**Solution**: Clear your browser cache or try in incognito mode
+**Solution**: Clear your browser cache or try in incognito mode (Ctrl+Shift+Delete)
 
 ### Issue: Some pages work but login doesn't
 **Solution**: This means the app is deployed but DATABASE_URL isn't available. Double-check step 1 above.
+
+### Issue: Services showing "No services available" even though database is seeded
+**Solution**: This is also caused by DATABASE_URL not being available. The API can't connect to the database.
 
 ## Testing the Deployment
 

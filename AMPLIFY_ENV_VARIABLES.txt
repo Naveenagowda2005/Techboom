@@ -1,0 +1,110 @@
+AWS AMPLIFY ENVIRONMENT VARIABLES
+==================================
+
+COPY EACH LINE BELOW AS A SEPARATE ENVIRONMENT VARIABLE
+Each line should be pasted EXACTLY as shown (one continuous line, no breaks)
+
+---
+
+Variable 1:
+Key: DATABASE_URL
+Value: postgresql://neondb_owner:npg_Vq72TSCxcZmj@ep-aged-cloud-ancpsk8y-pooler.c-6.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require
+
+---
+
+Variable 2:
+Key: JWT_ACCESS_SECRET
+Value: a8f5e2c9b1d4f7e3a6c8b2d5f9e1c4a7b3d6f8e2c5a9b1d4f7e3a6c8b2d5f9e1
+
+---
+
+Variable 3:
+Key: JWT_REFRESH_SECRET
+Value: c4a7b3d6f8e2c5a9b1d4f7e3a6c8b2d5f9e1c4a7b3d6f8e2c5a9b1d4f7e3a6c8
+
+---
+
+Variable 4:
+Key: JWT_ACCESS_EXPIRES
+Value: 15m
+
+---
+
+Variable 5:
+Key: JWT_REFRESH_EXPIRES
+Value: 7d
+
+---
+
+Variable 6:
+Key: RAZORPAY_KEY_ID
+Value: rzp_test_SZN1g8S6MYedgj
+
+---
+
+Variable 7:
+Key: RAZORPAY_KEY_SECRET
+Value: 2u73oCIdISaMlIMF9KR9dpzx
+
+---
+
+Variable 8:
+Key: NEXT_PUBLIC_RAZORPAY_KEY_ID
+Value: rzp_test_SZN1g8S6MYedgj
+
+---
+
+Variable 9:
+Key: CLOUDINARY_CLOUD_NAME
+Value: dp9xrfznz
+
+---
+
+Variable 10:
+Key: CLOUDINARY_API_KEY
+Value: 772476517938521
+
+---
+
+Variable 11:
+Key: CLOUDINARY_API_SECRET
+Value: DA6Z8huFta4kY82mwtoTZ2y-RIU
+
+---
+
+Variable 12:
+Key: NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
+Value: dp9xrfznz
+
+---
+
+Variable 13:
+Key: NODE_ENV
+Value: production
+
+---
+
+IMPORTANT NOTES:
+================
+
+1. DATABASE_URL is the most critical - it MUST be one continuous line
+2. If AWS Amplify shows it wrapped across 4 lines visually, that's okay
+3. But when you EDIT the variable, it should be ONE line with no breaks
+4. After adding all variables, click "Save"
+5. Then click "Redeploy this version" to apply changes
+6. Wait for build to complete (5-10 minutes)
+7. Hard refresh your browser (Ctrl+Shift+R) after deployment
+
+VERIFICATION:
+=============
+
+After deployment, visit your Amplify URL and:
+- Login page should load without DATABASE_URL error
+- Services page should show 9 services
+- Login with: admin@techboom.in / Admin@123
+
+If you still see errors:
+- Check browser console (F12)
+- Verify all 13 variables are in Amplify Console
+- Make sure you're on the "main" branch
+- Try incognito mode to rule out cache issues

@@ -1,19 +1,5 @@
 {
-  "framework": "nextjs",
-  "buildCommand": "npm run build",
-  "devCommand": "npm run dev",
+  "buildCommand": "npx prisma generate && npm run build",
   "installCommand": "npm install",
-  "env": {
-    "DATABASE_URL": "@database_url",
-    "JWT_ACCESS_SECRET": "@jwt_access_secret",
-    "JWT_REFRESH_SECRET": "@jwt_refresh_secret",
-    "RAZORPAY_KEY_ID": "@razorpay_key_id",
-    "RAZORPAY_KEY_SECRET": "@razorpay_key_secret",
-    "NEXT_PUBLIC_RAZORPAY_KEY_ID": "@next_public_razorpay_key_id",
-    "CLOUDINARY_CLOUD_NAME": "@cloudinary_cloud_name",
-    "CLOUDINARY_API_KEY": "@cloudinary_api_key",
-    "CLOUDINARY_API_SECRET": "@cloudinary_api_secret",
-    "NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME": "@next_public_cloudinary_cloud_name",
-    "NEXT_PUBLIC_APP_URL": "@next_public_app_url"
-  }
+  "framework": "nextjs"
 }

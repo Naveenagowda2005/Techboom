@@ -462,7 +462,7 @@ export default function CampaignsPage() {
                         handleLeaveCampaign(selectedCampaign.id)
                         setShowDetailsModal(false)
                       }}
-                      variant="secondary"
+                      variant="outline"
                     >
                       Leave Campaign
                     </Button>

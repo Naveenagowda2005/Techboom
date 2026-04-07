@@ -89,29 +89,62 @@ export async function GET(req: NextRequest) {
     }
 
     // Referrer (USER role) stats
-    const [
-      totalOrders, totalEarnings, pendingCommissions
-    ] = await Promise.all([
-      prisma.order.count({ where: { userId } }),
-      prisma.referral.aggregate({
-        where: { referrerId: userId },
-        _sum: { commissionAmount: true },
-      }),
-      prisma.referral.count({ where: { referrerId: userId, isPaid: false } }),
-    ])
+    // Get user's referral code
+    const referrerUser = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { referralCode: true, walletBalance: true }
+    })
 
+    if (!referrerUser) {
+      return successResponse({
+        totalOrders: 0,
+        totalEarnings: 0,
+        pendingCommissions: 0,
+        walletBalance: 0,
+        recentOrders: [],
+      })
+    }
+
+    // Get completed orders from referred users
+    const completedOrders = await prisma.order.findMany({
+      where: {
+        user: { referredBy: referrerUser.referralCode },
+        status: 'COMPLETED'
+      },
+      select: { amount: true }
+    })
+
+    // Calculate total earnings (10% commission)
+    const totalEarnings = completedOrders.reduce((sum, order) => {
+      return sum + (Number(order.amount) * 0.1)
+    }, 0)
+
+    // Count pending commissions (orders that are not yet completed)
+    const pendingCommissions = await prisma.order.count({
+      where: {
+        user: { referredBy: referrerUser.referralCode },
+        status: { in: ['CONFIRMED', 'IN_PROGRESS'] }
+      }
+    })
+
+    // Get recent orders from referred users
     const recentOrders = await prisma.order.findMany({
-      where: { userId },
+      where: {
+        user: { referredBy: referrerUser.referralCode }
+      },
       take: 5,
       orderBy: { createdAt: 'desc' },
-      include: { service: { select: { name: true, category: true } } },
+      include: { 
+        service: { select: { name: true, category: true } },
+        user: { select: { name: true, email: true } }
+      },
     })
 
     return successResponse({
-      totalOrders,
-      totalEarnings: totalEarnings._sum.commissionAmount || 0,
+      totalOrders: completedOrders.length,
+      totalEarnings,
       pendingCommissions,
-      walletBalance: user?.walletBalance || 0,
+      walletBalance: referrerUser.walletBalance || 0,
       recentOrders,
     })
   } catch (error) {

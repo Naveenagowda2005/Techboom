@@ -60,31 +60,65 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       if (referrer) {
         const commissionAmount = Number(order.amount) * 0.10
 
-        await prisma.$transaction([
-          prisma.referral.create({
-            data: {
-              referrerId: referrer.id,
-              orderId: order.id,
-              referralCode: order.referralCode,
-              commissionAmount,
-              isPaid: false,
-            },
-          }),
-          prisma.user.update({
-            where: { id: referrer.id },
-            data: { walletBalance: { increment: commissionAmount } },
-          }),
-          prisma.transaction.create({
-            data: {
-              userId: referrer.id,
-              type: 'COMMISSION',
-              amount: commissionAmount,
-              status: 'COMPLETED',
-              description: `Commission for order ${order.orderNumber}`,
-              referenceId: order.id,
-            },
-          }),
-        ])
+        // Check if referral record already exists
+        const existingReferral = await prisma.referral.findUnique({
+          where: { orderId: order.id }
+        })
+
+        if (existingReferral) {
+          // Update existing referral with commission
+          await prisma.$transaction([
+            prisma.referral.update({
+              where: { orderId: order.id },
+              data: {
+                commissionAmount,
+                isPaid: false,
+              },
+            }),
+            prisma.user.update({
+              where: { id: referrer.id },
+              data: { walletBalance: { increment: commissionAmount } },
+            }),
+            prisma.transaction.create({
+              data: {
+                userId: referrer.id,
+                type: 'COMMISSION',
+                amount: commissionAmount,
+                status: 'COMPLETED',
+                description: `Commission for order ${order.orderNumber}`,
+                referenceId: order.id,
+              },
+            }),
+          ])
+        } else {
+          // Create new referral record (fallback if it doesn't exist)
+          await prisma.$transaction([
+            prisma.referral.create({
+              data: {
+                referrerId: referrer.id,
+                referredUserId: order.userId,
+                orderId: order.id,
+                referralCode: order.referralCode,
+                commissionAmount,
+                isPaid: false,
+              },
+            }),
+            prisma.user.update({
+              where: { id: referrer.id },
+              data: { walletBalance: { increment: commissionAmount } },
+            }),
+            prisma.transaction.create({
+              data: {
+                userId: referrer.id,
+                type: 'COMMISSION',
+                amount: commissionAmount,
+                status: 'COMPLETED',
+                description: `Commission for order ${order.orderNumber}`,
+                referenceId: order.id,
+              },
+            }),
+          ])
+        }
       }
     }
 

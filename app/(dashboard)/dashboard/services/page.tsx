@@ -34,8 +34,25 @@ export default function ServicesPage() {
     { value: 'all', label: 'All Services' }
   ])
   const [viewingImage, setViewingImage] = useState<string | null>(null)
+  const [userDiscount, setUserDiscount] = useState<{ percent: number; hasUsed: boolean } | null>(null)
 
   useEffect(() => {
+    const token = localStorage.getItem('access_token')
+    
+    // Fetch user discount info
+    fetch('/api/auth/me', {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.success && d.data.firstOrderDiscount > 0 && !d.data.hasUsedFirstOrderDiscount) {
+          setUserDiscount({ 
+            percent: d.data.firstOrderDiscount, 
+            hasUsed: d.data.hasUsedFirstOrderDiscount 
+          })
+        }
+      })
+    
     fetch('/api/services')
       .then((r) => r.json())
       .then((d) => { 
@@ -70,9 +87,15 @@ export default function ServicesPage() {
   const handleOrder = async (serviceId: string, serviceName: string, servicePrice: number) => {
     setOrdering(serviceId)
     const token = localStorage.getItem('access_token')
-    const user = JSON.parse(localStorage.getItem('user') || '{}')
 
     try {
+      // Step 0: Fetch fresh user data to get phone number
+      const userRes = await fetch('/api/auth/me', {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      const userData = await userRes.json()
+      const user = userData.success ? userData.data : JSON.parse(localStorage.getItem('user') || '{}')
+
       // Step 1: Create order in database
       const orderPayload = { serviceId }
       
@@ -137,6 +160,7 @@ export default function ServicesPage() {
         prefill: {
           name: user.name || '',
           email: user.email || '',
+          contact: user.phone ? user.phone.replace(/\D/g, '') : '', // Remove non-digits
         },
         theme: {
           color: '#a855f7',
@@ -161,6 +185,23 @@ export default function ServicesPage() {
         <h1 className="text-2xl font-black text-white">Browse Services</h1>
         <p className="text-white/50 text-sm mt-1">Choose a service to get started</p>
       </div>
+
+      {/* First Order Discount Banner */}
+      {userDiscount && userDiscount.percent > 0 && !userDiscount.hasUsed && (
+        <div className="bg-gradient-to-r from-green-900/40 to-emerald-900/20 border border-green-500/30 rounded-2xl p-5">
+          <div className="flex items-center gap-3">
+            <div className="text-3xl">🎉</div>
+            <div className="flex-1">
+              <h3 className="text-lg font-bold text-white mb-1">
+                {userDiscount.percent}% OFF Your First Order!
+              </h3>
+              <p className="text-white/70 text-sm">
+                Your referral discount will be applied automatically at checkout. Save big on your first service!
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {success && (
         <div className="bg-green-500/10 border border-green-500/30 rounded-xl px-4 py-3 text-green-400 text-sm">
@@ -229,7 +270,14 @@ export default function ServicesPage() {
               )}
 
               <div className="flex items-center justify-between mb-4">
-                <span className="text-yellow-400 font-bold text-lg">{formatCurrency(service.price)}</span>
+                <div>
+                  <span className="text-yellow-400 font-bold text-lg">{formatCurrency(service.price)}</span>
+                  {userDiscount && userDiscount.percent > 0 && !userDiscount.hasUsed && (
+                    <div className="text-xs text-green-400 mt-1">
+                      After discount: {formatCurrency(service.price * (1 - userDiscount.percent / 100))}
+                    </div>
+                  )}
+                </div>
                 <span className="text-white/40 text-xs">{service.deliveryDays} days delivery</span>
               </div>
 

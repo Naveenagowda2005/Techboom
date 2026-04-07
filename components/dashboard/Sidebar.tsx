@@ -13,6 +13,7 @@ const customerNavItems = [
 const userNavItems = [
   { href: '/dashboard', label: 'Overview', icon: '📊' },
   { href: '/dashboard/referrals', label: 'Referrals', icon: '🔗' },
+  { href: '/dashboard/campaigns', label: 'Campaigns', icon: '🎯' },
   { href: '/dashboard/wallet', label: 'Earnings', icon: '💰' },
   { href: '/dashboard/profile', label: 'Profile', icon: '👤' },
 ]
@@ -26,6 +27,7 @@ const adminNavItems = [
   { href: '/admin/referrals', label: 'Referrals', icon: '🔗' },
   { href: '/admin/payments', label: 'Payments', icon: '💳' },
   { href: '/admin/campaigns', label: 'Campaigns', icon: '🎯' },
+  { href: '/admin/settings', label: 'Settings', icon: '⚙️' },
 ]
 
 interface SidebarProps {

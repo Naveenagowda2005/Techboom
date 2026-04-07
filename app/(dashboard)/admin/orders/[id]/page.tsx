@@ -8,6 +8,9 @@ interface Order {
   orderNumber: string
   status: string
   amount: number
+  originalAmount?: number
+  discountPercent?: number
+  discountAmount?: number
   createdAt: string
   updatedAt: string
   notes?: string
@@ -222,7 +225,7 @@ export default function AdminOrderDetailPage() {
         <td><strong>${order.service.name}</strong></td>
         <td>${order.service.description}</td>
         <td>${order.service.deliveryDays} days</td>
-        <td style="text-align: right;">${formatCurrency(order.amount)}</td>
+        <td style="text-align: right;">${order.originalAmount && order.discountPercent && order.discountPercent > 0 ? formatCurrency(order.originalAmount) : formatCurrency(order.amount)}</td>
       </tr>
       ${order.service.features?.length > 0 ? `
       <tr>
@@ -231,10 +234,23 @@ export default function AdminOrderDetailPage() {
         </td>
       </tr>
       ` : ''}
+      ${order.originalAmount && order.discountPercent && order.discountPercent > 0 ? `
+      <tr>
+        <td colspan="3" style="text-align: right; color: #10b981;">Referral Discount (${order.discountPercent}%):</td>
+        <td style="text-align: right; color: #10b981;">-${formatCurrency(order.discountAmount || 0)}</td>
+      </tr>
+      ` : ''}
       <tr class="total-row">
         <td colspan="3" style="text-align: right;">TOTAL:</td>
         <td style="text-align: right;">${formatCurrency(order.amount)}</td>
       </tr>
+      ${order.originalAmount && order.discountPercent && order.discountPercent > 0 ? `
+      <tr>
+        <td colspan="4" style="text-align: right; padding-top: 8px; font-size: 12px; color: #10b981;">
+          🎉 You saved ${formatCurrency(order.discountAmount || 0)} with referral discount!
+        </td>
+      </tr>
+      ` : ''}
     </tbody>
   </table>
 
@@ -653,11 +669,31 @@ export default function AdminOrderDetailPage() {
                 <span className="text-white">{new Date(order.updatedAt).toLocaleDateString()}</span>
               </div>
               
+              {order.originalAmount && order.discountPercent && order.discountPercent > 0 && (
+                <>
+                  <div className="flex justify-between text-sm pt-3 border-t border-white/10">
+                    <span className="text-white/60">Original Price</span>
+                    <span className="text-white/60 line-through">{formatCurrency(order.originalAmount)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-green-400">Referral Discount ({order.discountPercent}%)</span>
+                    <span className="text-green-400">-{formatCurrency(order.discountAmount || 0)}</span>
+                  </div>
+                </>
+              )}
+              
               <div className="pt-3 border-t border-white/10">
                 <div className="flex justify-between items-center">
-                  <span className="text-white font-medium">Total Amount</span>
+                  <span className="text-white font-medium">
+                    {order.discountPercent && order.discountPercent > 0 ? 'Final Amount' : 'Total Amount'}
+                  </span>
                   <span className="text-yellow-400 font-bold text-xl">{formatCurrency(order.amount)}</span>
                 </div>
+                {order.discountPercent && order.discountPercent > 0 && (
+                  <div className="mt-2 text-xs text-green-400">
+                    💰 Customer saved {formatCurrency(order.discountAmount || 0)}
+                  </div>
+                )}
               </div>
             </div>
           </div>

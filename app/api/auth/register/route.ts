@@ -30,11 +30,16 @@ export async function POST(req: NextRequest) {
     }
 
     // Validate referral code if provided
+    let firstOrderDiscount = 0
     if (refCode) {
       const referrer = await prisma.user.findUnique({ where: { referralCode: refCode } })
       if (!referrer) {
         return errorResponse('Invalid referral code', 400)
       }
+      
+      // Get referral discount from settings
+      const settings = await prisma.settings.findFirst()
+      firstOrderDiscount = settings?.referralDiscountPercent || 20
     }
 
     const hashedPassword = await bcrypt.hash(password, 12)
@@ -49,6 +54,8 @@ export async function POST(req: NextRequest) {
         role, // Use the determined role
         referralCode: newReferralCode,
         referredBy: refCode || null,
+        firstOrderDiscount,
+        hasUsedFirstOrderDiscount: false
       },
       select: {
         id: true,
@@ -56,6 +63,7 @@ export async function POST(req: NextRequest) {
         email: true,
         role: true,
         referralCode: true,
+        firstOrderDiscount: true,
         createdAt: true,
       },
     })

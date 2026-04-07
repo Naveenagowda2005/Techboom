@@ -8,6 +8,9 @@ interface Order {
   orderNumber: string
   status: string
   amount: number
+  originalAmount?: number
+  discountPercent?: number
+  discountAmount?: number
   createdAt: string
   updatedAt: string
   notes?: string
@@ -405,11 +408,31 @@ export default function OrderDetailPage() {
                 <span className="text-white">{new Date(order.updatedAt).toLocaleDateString()}</span>
               </div>
               
+              {order.originalAmount && order.discountPercent && order.discountPercent > 0 && (
+                <>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-white/60">Original Price</span>
+                    <span className="text-white/60 line-through">{formatCurrency(order.originalAmount)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-green-400">Discount ({order.discountPercent}%)</span>
+                    <span className="text-green-400">-{formatCurrency(order.discountAmount || 0)}</span>
+                  </div>
+                </>
+              )}
+              
               <div className="pt-3 border-t border-white/10">
                 <div className="flex justify-between items-center">
-                  <span className="text-white font-medium">Total Amount</span>
+                  <span className="text-white font-medium">
+                    {order.discountPercent && order.discountPercent > 0 ? 'Final Amount' : 'Total Amount'}
+                  </span>
                   <span className="text-yellow-400 font-bold text-xl">{formatCurrency(order.amount)}</span>
                 </div>
+                {order.discountPercent && order.discountPercent > 0 && (
+                  <div className="mt-2 text-xs text-green-400 text-right">
+                    🎉 You saved {formatCurrency(order.discountAmount || 0)} with referral discount!
+                  </div>
+                )}
               </div>
             </div>
           </div>

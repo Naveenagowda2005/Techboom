@@ -28,16 +28,25 @@ export default function WalletPage() {
       fetch('/api/referrals', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
     ]).then(([user, refs]) => {
       if (user.success) setBalance(Number(user.data.walletBalance))
-      if (refs.success) {
-        // Map referrals as transactions for display
-        setTransactions(refs.data.referrals.map((r: { id: string; commissionAmount: number; isPaid: boolean; createdAt: string; order?: { orderNumber: string } }) => ({
-          id: r.id,
-          type: 'COMMISSION',
-          amount: r.commissionAmount,
-          status: r.isPaid ? 'COMPLETED' : 'PENDING',
-          description: `Commission for order ${r.order?.orderNumber || ''}`,
-          createdAt: r.createdAt,
-        })))
+      if (refs.success && refs.data.referredUsers) {
+        // Extract all completed orders from referred users and map as transactions
+        const commissionTransactions: Transaction[] = []
+        refs.data.referredUsers.forEach((refUser: any) => {
+          refUser.orders?.forEach((order: any) => {
+            if (order.status === 'COMPLETED') {
+              const commissionAmount = Number(order.amount) * 0.1
+              commissionTransactions.push({
+                id: order.id,
+                type: 'COMMISSION',
+                amount: commissionAmount,
+                status: 'COMPLETED',
+                description: `Commission for order ${order.orderNumber}`,
+                createdAt: order.createdAt,
+              })
+            }
+          })
+        })
+        setTransactions(commissionTransactions)
       }
     }).finally(() => setLoading(false))
   }, [])

@@ -150,14 +150,16 @@ function SignupForm() {
             </Link>
           </p>
 
-          <div className="mt-4 pt-4 border-t border-white/10 text-center">
-            <p className="text-xs text-white/40">
-              Want to become a referrer?{' '}
-              <Link href="/user/signup" className="text-purple-400 hover:text-purple-300">
-                Sign up here
-              </Link>
-            </p>
-          </div>
+          {!refCode && (
+            <div className="mt-4 pt-4 border-t border-white/10 text-center">
+              <p className="text-xs text-white/40">
+                Want to become a referrer?{' '}
+                <Link href="/user/signup" className="text-purple-400 hover:text-purple-300">
+                  Sign up here
+                </Link>
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </div>

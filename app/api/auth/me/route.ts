@@ -19,6 +19,8 @@ export async function GET(req: NextRequest) {
         referralCode: true,
         walletBalance: true,
         isVerified: true,
+        firstOrderDiscount: true,
+        hasUsedFirstOrderDiscount: true,
         createdAt: true,
         _count: {
           select: {

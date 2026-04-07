@@ -58,12 +58,37 @@ export async function POST(req: NextRequest) {
       if (referrer.id === userId) return errorResponse('Cannot use your own referral code', 400)
     }
 
+    // Check for first order discount
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { 
+        firstOrderDiscount: true, 
+        hasUsedFirstOrderDiscount: true,
+        referredBy: true 
+      }
+    })
+
+    let discountPercent = 0
+    let discountAmount = 0
+    let finalAmount = Number(service.price)
+    const originalAmount = Number(service.price)
+
+    // Apply first order discount if eligible
+    if (user && user.firstOrderDiscount > 0 && !user.hasUsedFirstOrderDiscount) {
+      discountPercent = user.firstOrderDiscount
+      discountAmount = (originalAmount * discountPercent) / 100
+      finalAmount = originalAmount - discountAmount
+    }
+
     const order = await prisma.order.create({
       data: {
         orderNumber: generateOrderNumber(),
         userId,
         serviceId,
-        amount: service.price,
+        amount: finalAmount,
+        originalAmount: discountPercent > 0 ? originalAmount : null,
+        discountPercent,
+        discountAmount,
         notes,
         requirements: requirements as Record<string, string> | undefined,
         referralCode,
@@ -72,6 +97,31 @@ export async function POST(req: NextRequest) {
         service: { select: { name: true, category: true } },
       },
     })
+
+    // Mark discount as used if it was applied
+    if (discountPercent > 0) {
+      await prisma.user.update({
+        where: { id: userId },
+        data: { hasUsedFirstOrderDiscount: true }
+      })
+    }
+
+    // Create referral record if order was placed with referral code
+    if (referralCode) {
+      const referrer = await prisma.user.findUnique({ where: { referralCode } })
+      if (referrer) {
+        await prisma.referral.create({
+          data: {
+            referrerId: referrer.id,
+            referredUserId: userId,
+            orderId: order.id,
+            referralCode,
+            commissionAmount: 0, // Will be updated when order is completed
+            isPaid: false,
+          },
+        })
+      }
+    }
 
     return successResponse(order, 'Order created', 201)
   } catch (error) {

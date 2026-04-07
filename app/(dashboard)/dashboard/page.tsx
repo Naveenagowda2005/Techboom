@@ -29,13 +29,26 @@ interface DashboardStats {
 export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [loading, setLoading] = useState(true)
-  const [user, setUser] = useState<{ referralCode: string; name: string; role: string } | null>(null)
+  const [user, setUser] = useState<{ referralCode: string; name: string; role: string; firstOrderDiscount?: number; hasUsedFirstOrderDiscount?: boolean } | null>(null)
 
   useEffect(() => {
     const stored = localStorage.getItem('user')
     if (stored) setUser(JSON.parse(stored))
 
     const token = localStorage.getItem('access_token')
+    
+    // Fetch user info to get discount details
+    fetch('/api/auth/me', {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.success) {
+          setUser(d.data)
+          localStorage.setItem('user', JSON.stringify(d.data))
+        }
+      })
+    
     fetch('/api/dashboard/stats', {
       headers: { Authorization: `Bearer ${token}` },
     })
@@ -115,20 +128,47 @@ export default function DashboardPage() {
 
       {/* Quick Actions - Only for Customers */}
       {isCustomer && (
-        <div className="bg-gradient-to-r from-purple-900/40 to-yellow-900/10 border border-purple-500/30 rounded-2xl p-6">
-          <h3 className="text-lg font-bold text-white mb-4">Quick Actions</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <Link href="/dashboard/services" className="btn-primary text-center py-3">
-              📱 Book Service
-            </Link>
-            <Link href="/dashboard/orders" className="btn-outline text-center py-3">
-              📦 View Orders
-            </Link>
-            <Link href="/dashboard/profile" className="btn-outline text-center py-3">
-              👤 My Profile
-            </Link>
+        <>
+          {/* First Order Discount Banner */}
+          {user && user.firstOrderDiscount && user.firstOrderDiscount > 0 && !user.hasUsedFirstOrderDiscount && (
+            <div className="bg-gradient-to-r from-green-900/40 to-emerald-900/20 border border-green-500/30 rounded-2xl p-6">
+              <div className="flex items-start gap-4">
+                <div className="text-4xl">🎉</div>
+                <div className="flex-1">
+                  <h3 className="text-xl font-bold text-white mb-2">
+                    Welcome Bonus: {user.firstOrderDiscount}% OFF Your First Order!
+                  </h3>
+                  <p className="text-white/70 text-sm mb-4">
+                    You've been referred by a friend! Get {user.firstOrderDiscount}% discount on your first service booking. 
+                    This discount will be applied automatically when you place your first order.
+                  </p>
+                  <Link 
+                    href="/dashboard/services" 
+                    className="inline-flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-xl font-medium transition-colors"
+                  >
+                    <span>🚀</span>
+                    Book Your First Service Now
+                  </Link>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          <div className="bg-gradient-to-r from-purple-900/40 to-yellow-900/10 border border-purple-500/30 rounded-2xl p-6">
+            <h3 className="text-lg font-bold text-white mb-4">Quick Actions</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <Link href="/dashboard/services" className="btn-primary text-center py-3">
+                📱 Book Service
+              </Link>
+              <Link href="/dashboard/orders" className="btn-outline text-center py-3">
+                📦 View Orders
+              </Link>
+              <Link href="/dashboard/profile" className="btn-outline text-center py-3">
+                👤 My Profile
+              </Link>
+            </div>
           </div>
-        </div>
+        </>
       )}
 
       {/* Recent Orders */}

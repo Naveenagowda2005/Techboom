@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { formatCurrency } from '@/lib/utils'
 
 interface Service {
@@ -16,6 +17,7 @@ interface Service {
 }
 
 export default function PublicServicesPage() {
+  const router = useRouter()
   const [services, setServices] = useState<Service[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
@@ -24,6 +26,39 @@ export default function PublicServicesPage() {
     { value: 'all', label: 'All Services' }
   ])
   const [viewingImage, setViewingImage] = useState<string | null>(null)
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [userRole, setUserRole] = useState<string | null>(null)
+  const [authChecking, setAuthChecking] = useState(true)
+
+  // Check authentication status
+  useEffect(() => {
+    setAuthChecking(true)
+    fetch('/api/auth/me', {
+      credentials: 'include', // Important: include cookies
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    })
+      .then((r) => r.json())
+      .then((d) => {
+        console.log('Auth check response:', d)
+        if (d.success && d.data) {
+          setIsLoggedIn(true)
+          setUserRole(d.data.role)
+          console.log('User is logged in, role:', d.data.role)
+        } else {
+          console.log('User is not logged in')
+          setIsLoggedIn(false)
+        }
+      })
+      .catch((err) => {
+        console.log('Auth check failed:', err)
+        setIsLoggedIn(false)
+      })
+      .finally(() => {
+        setAuthChecking(false)
+      })
+  }, [])
 
   // Fetch unique categories
   useEffect(() => {
@@ -60,7 +95,7 @@ export default function PublicServicesPage() {
   }, [selectedCategory])
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900">
+    <div className="min-h-screen bg-gradient-to-br from-[#0f0728] via-[#1a0b3f] to-[#0f0728]">
       {/* Header */}
       <div className="container-max py-16">
         <div className="text-center mb-12">
@@ -164,35 +199,64 @@ export default function PublicServicesPage() {
         )}
 
         {/* CTA Section */}
-        <div className="mt-16 text-center bg-gradient-to-r from-purple-500/20 to-indigo-500/20 border border-purple-500/30 rounded-2xl p-8">
-          <h2 className="text-2xl font-bold text-white mb-3">
-            Ready to Get Started?
-          </h2>
-          <p className="text-white/70 mb-6 max-w-xl mx-auto">
-            Sign up now to place orders, track progress, and grow your business with our services.
-          </p>
-          <div className="flex gap-4 justify-center">
-            <Link
-              href="/signup"
-              className="bg-purple-500 hover:bg-purple-600 text-white px-6 py-3 rounded-lg font-medium transition-colors"
-            >
-              Sign Up Free
-            </Link>
-            <Link
-              href="/login"
-              className="bg-white/10 hover:bg-white/20 text-white px-6 py-3 rounded-lg font-medium transition-colors"
-            >
-              Login
-            </Link>
+        {authChecking ? (
+          <div className="mt-16 text-center bg-gradient-to-r from-purple-500/20 to-indigo-500/20 border border-purple-500/30 rounded-2xl p-8">
+            <div className="animate-pulse">
+              <div className="h-8 bg-white/10 rounded w-64 mx-auto mb-4"></div>
+              <div className="h-4 bg-white/10 rounded w-96 mx-auto mb-6"></div>
+              <div className="h-12 bg-white/10 rounded w-40 mx-auto"></div>
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="mt-16 text-center bg-gradient-to-r from-purple-500/20 to-indigo-500/20 border border-purple-500/30 rounded-2xl p-8">
+            {isLoggedIn ? (
+              <>
+                <h2 className="text-2xl font-bold text-white mb-3">
+                  Browse Services & Place Orders
+                </h2>
+                <p className="text-white/70 mb-6 max-w-xl mx-auto">
+                  Click on any service to view details and place an order.
+                </p>
+                <Link
+                  href={userRole === 'ADMIN' ? '/admin' : '/dashboard'}
+                  className="inline-block bg-purple-500 hover:bg-purple-600 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+                >
+                  Go to Dashboard
+                </Link>
+              </>
+            ) : (
+              <>
+                <h2 className="text-2xl font-bold text-white mb-3">
+                  Ready to Get Started?
+                </h2>
+                <p className="text-white/70 mb-6 max-w-xl mx-auto">
+                  Sign up now to place orders, track progress, and grow your business with our services.
+                </p>
+                <div className="flex gap-4 justify-center">
+                  <Link
+                    href="/signup"
+                    className="bg-purple-500 hover:bg-purple-600 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+                  >
+                    Sign Up Free
+                  </Link>
+                  <Link
+                    href="/login"
+                    className="bg-white/10 hover:bg-white/20 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+                  >
+                    Login
+                  </Link>
+                </div>
+              </>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Service Details Modal */}
       {selectedService && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => setSelectedService(null)}>
-          <div className="bg-gradient-to-br from-purple-900/95 to-indigo-900/95 border border-white/10 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            <div className="p-6 border-b border-white/10 flex items-center justify-between sticky top-0 bg-gradient-to-br from-purple-900 to-indigo-900">
+          <div className="bg-gradient-to-br from-[#1a0b3f]/95 to-[#0f0728]/95 border border-white/10 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="p-6 border-b border-white/10 flex items-center justify-between sticky top-0 bg-gradient-to-br from-[#0f0728] to-[#1a0b3f]">
               <h3 className="text-2xl font-bold text-white">{selectedService.name}</h3>
               <button
                 onClick={() => setSelectedService(null)}
@@ -265,15 +329,29 @@ export default function PublicServicesPage() {
 
               {/* CTA */}
               <div className="pt-4 border-t border-white/10">
-                <Link
-                  href="/signup"
-                  className="block w-full bg-purple-500 hover:bg-purple-600 text-white text-center px-6 py-4 rounded-xl font-bold transition-colors"
-                >
-                  Sign Up to Order This Service
-                </Link>
-                <p className="text-white/40 text-xs text-center mt-3">
-                  Already have an account? <Link href="/login" className="text-purple-400 hover:text-purple-300">Login here</Link>
-                </p>
+                {isLoggedIn ? (
+                  <button
+                    onClick={() => {
+                      setSelectedService(null)
+                      router.push(userRole === 'ADMIN' ? '/admin/services' : '/dashboard/services')
+                    }}
+                    className="block w-full bg-purple-500 hover:bg-purple-600 text-white text-center px-6 py-4 rounded-xl font-bold transition-colors"
+                  >
+                    Order This Service
+                  </button>
+                ) : (
+                  <>
+                    <Link
+                      href="/signup"
+                      className="block w-full bg-purple-500 hover:bg-purple-600 text-white text-center px-6 py-4 rounded-xl font-bold transition-colors"
+                    >
+                      Sign Up to Order This Service
+                    </Link>
+                    <p className="text-white/40 text-xs text-center mt-3">
+                      Already have an account? <Link href="/login" className="text-purple-400 hover:text-purple-300">Login here</Link>
+                    </p>
+                  </>
+                )}
               </div>
             </div>
           </div>

@@ -19,6 +19,9 @@ interface Campaign {
     name: string
     email: string
   }
+  _count: {
+    participants: number
+  }
 }
 
 export default function AdminCampaignsPage() {
@@ -45,8 +48,12 @@ export default function AdminCampaignsPage() {
         headers: { Authorization: `Bearer ${token}` }
       })
       const data = await res.json()
+      console.log('Fetch campaigns response:', data)
       if (data.success) {
+        console.log('Setting campaigns:', data.data.campaigns)
         setCampaigns(data.data.campaigns)
+      } else {
+        console.error('Failed to fetch campaigns:', data)
       }
     } catch (error) {
       console.error('Error fetching campaigns:', error)
@@ -89,6 +96,13 @@ export default function AdminCampaignsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    // Validate platform selection
+    if (formData.platform.length === 0) {
+      alert('Please select at least one platform')
+      return
+    }
+
     setSaving(true)
 
     const token = localStorage.getItem('access_token')
@@ -96,27 +110,53 @@ export default function AdminCampaignsPage() {
     const method = editingCampaign ? 'PUT' : 'POST'
 
     try {
+      const payload = {
+        title: formData.title,
+        description: formData.description,
+        budget: parseFloat(formData.budget),
+        platform: formData.platform,
+        status: formData.status,
+        startDate: formData.startDate || null,
+        endDate: formData.endDate || null
+      }
+
+      console.log('Sending campaign data:', payload)
+
       const res = await fetch(url, {
         method,
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({
-          ...formData,
-          budget: parseFloat(formData.budget),
-          startDate: formData.startDate || null,
-          endDate: formData.endDate || null
-        })
+        body: JSON.stringify(payload)
       })
 
-      if (res.ok) {
+      const data = await res.json()
+      console.log('Campaign API Response:', data)
+      console.log('Response status:', res.status)
+      console.log('Response ok:', res.ok)
+
+      if (res.ok && data.success) {
         setShowModal(false)
         setEditingCampaign(null)
-        fetchCampaigns()
+        setFormData({
+          title: '',
+          description: '',
+          budget: '',
+          platform: [],
+          status: 'DRAFT',
+          startDate: '',
+          endDate: ''
+        })
+        await fetchCampaigns()
+        alert(editingCampaign ? 'Campaign updated successfully!' : 'Campaign created successfully!')
+      } else {
+        console.error('API Error:', data)
+        alert(`Error: ${data.message || 'Failed to save campaign'}`)
       }
     } catch (error) {
       console.error('Error saving campaign:', error)
+      alert('An error occurred while saving the campaign')
     } finally {
       setSaving(false)
     }
@@ -184,6 +224,7 @@ export default function AdminCampaignsPage() {
                   <th className="px-6 py-4 font-medium">Creator</th>
                   <th className="px-6 py-4 font-medium">Budget</th>
                   <th className="px-6 py-4 font-medium">Platforms</th>
+                  <th className="px-6 py-4 font-medium">Participants</th>
                   <th className="px-6 py-4 font-medium">Status</th>
                   <th className="px-6 py-4 font-medium">Duration</th>
                   <th className="px-6 py-4 font-medium">Actions</th>
@@ -218,6 +259,11 @@ export default function AdminCampaignsPage() {
                           </span>
                         ))}
                       </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="text-white font-semibold">
+                        {campaign._count.participants}
+                      </span>
                     </td>
                     <td className="px-6 py-4">
                       <span
@@ -302,7 +348,7 @@ export default function AdminCampaignsPage() {
               
               <div>
                 <label className="block text-sm font-medium text-white/70 mb-2">
-                  Platforms
+                  Platforms <span className="text-red-400">*</span>
                 </label>
                 <div className="flex flex-wrap gap-2">
                   {platforms.map((platform) => (
@@ -320,6 +366,9 @@ export default function AdminCampaignsPage() {
                     </button>
                   ))}
                 </div>
+                {formData.platform.length === 0 && (
+                  <p className="text-xs text-red-400 mt-1">Select at least one platform</p>
+                )}
               </div>
 
               <div>

@@ -1,0 +1,62 @@
+VERCEL DEPLOYMENT CHECKLIST
+===========================
+
+Follow these steps in order:
+
+□ Step 1: Go to https://vercel.com
+□ Step 2: Click "Sign Up" → "Continue with GitHub"
+□ Step 3: Authorize Vercel with your GitHub account
+□ Step 4: Click "Add New..." → "Project"
+□ Step 5: Find "Techboom" repo and click "Import"
+□ Step 6: Set Root Directory to: techboom-app
+□ Step 7: Add all 13 environment variables (see below)
+□ Step 8: Click "Deploy" button
+□ Step 9: Wait 3-5 minutes for build
+□ Step 10: Visit your new URL and test!
+
+ENVIRONMENT VARIABLES TO ADD:
+==============================
+
+Copy-paste each one into Vercel:
+
+1. DATABASE_URL = postgresql://neondb_owner:npg_Vq72TSCxcZmj@ep-aged-cloud-ancpsk8y-pooler.c-6.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require
+
+2. JWT_ACCESS_SECRET = a8f5e2c9b1d4f7e3a6c8b2d5f9e1c4a7b3d6f8e2c5a9b1d4f7e3a6c8b2d5f9e1
+
+3. JWT_REFRESH_SECRET = c4a7b3d6f8e2c5a9b1d4f7e3a6c8b2d5f9e1c4a7b3d6f8e2c5a9b1d4f7e3a6c8
+
+4. JWT_ACCESS_EXPIRES = 15m
+
+5. JWT_REFRESH_EXPIRES = 7d
+
+6. RAZORPAY_KEY_ID = rzp_test_SZN1g8S6MYedgj
+
+7. RAZORPAY_KEY_SECRET = 2u73oCIdISaMlIMF9KR9dpzx
+
+8. NEXT_PUBLIC_RAZORPAY_KEY_ID = rzp_test_SZN1g8S6MYedgj
+
+9. CLOUDINARY_CLOUD_NAME = dp9xrfznz
+
+10. CLOUDINARY_API_KEY = 772476517938521
+
+11. CLOUDINARY_API_SECRET = DA6Z8huFta4kY82mwtoTZ2y-RIU
+
+12. NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME = dp9xrfznz
+
+13. NODE_ENV = production
+
+TEST CREDENTIALS:
+=================
+After deployment, test login with:
+Email: admin@techboom.in
+Password: Admin@123
+
+EXPECTED RESULT:
+================
+✅ Homepage loads with services
+✅ Login works
+✅ Dashboard shows data
+✅ No DATABASE_URL error
+✅ All features working
+
+If you see any errors, check VERCEL_STEP_BY_STEP.md for troubleshooting!

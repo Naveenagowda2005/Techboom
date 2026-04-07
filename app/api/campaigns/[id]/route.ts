@@ -42,13 +42,30 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       return errorResponse('Unauthorized', 403)
     }
 
+    // Validate required fields
+    if (!body.title || !body.description || !body.budget || !body.platform || body.platform.length === 0) {
+      return errorResponse('Missing required fields', 400)
+    }
+
     const updated = await prisma.influencerCampaign.update({
       where: { id: params.id },
-      data: body
+      data: {
+        title: body.title,
+        description: body.description,
+        budget: body.budget,
+        platform: body.platform,
+        status: body.status || 'DRAFT',
+        startDate: body.startDate ? new Date(body.startDate) : null,
+        endDate: body.endDate ? new Date(body.endDate) : null
+      },
+      include: {
+        user: { select: { name: true, email: true } }
+      }
     })
 
     return successResponse(updated, 'Campaign updated')
   } catch (error) {
+    console.error('Campaign update error:', error)
     return handleApiError(error)
   }
 }

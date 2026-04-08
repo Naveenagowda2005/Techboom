@@ -16,6 +16,7 @@ interface Transaction {
 
 export default function WalletPage() {
   const [balance, setBalance] = useState(0)
+  const [pendingCommission, setPendingCommission] = useState(0)
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [loading, setLoading] = useState(true)
   const [showWithdraw, setShowWithdraw] = useState(false)
@@ -27,13 +28,19 @@ export default function WalletPage() {
     Promise.all([
       fetch('/api/auth/me', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
       fetch('/api/transactions', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
-    ]).then(([user, txData]) => {
+      fetch('/api/referrals', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
+    ]).then(([user, txData, referralData]) => {
       if (user.success) {
         setBalance(Number(user.data.walletBalance))
         setUpiId(user.data.upiId || '')
       }
       if (txData.success && txData.data) {
         setTransactions(txData.data)
+      }
+      if (referralData.success && referralData.data.stats) {
+        // Calculate pending commission (total earnings - paid commissions)
+        const totalEarnings = Number(referralData.data.stats.totalEarnings || 0)
+        setPendingCommission(totalEarnings)
       }
     }).finally(() => setLoading(false))
   }, [])
@@ -94,8 +101,18 @@ export default function WalletPage() {
 
       {/* Balance Card */}
       <div className="bg-gradient-to-br from-purple-600/30 to-yellow-600/10 border border-purple-500/30 rounded-2xl p-8">
-        <p className="text-white/60 text-sm mb-2">Available Balance</p>
-        <div className="text-5xl font-black text-white mb-6">{formatCurrency(balance)}</div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <div>
+            <p className="text-white/60 text-sm mb-2">Pending Commission</p>
+            <div className="text-4xl font-black text-yellow-400">{formatCurrency(pendingCommission)}</div>
+            <p className="text-white/40 text-xs mt-1">Awaiting admin payment</p>
+          </div>
+          <div>
+            <p className="text-white/60 text-sm mb-2">Paid Out</p>
+            <div className="text-4xl font-black text-green-400">{formatCurrency(Math.abs(balance))}</div>
+            <p className="text-white/40 text-xs mt-1">Total commissions paid to you</p>
+          </div>
+        </div>
         
         {upiId ? (
           <div className="mb-4">

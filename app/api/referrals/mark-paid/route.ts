@@ -62,6 +62,10 @@ export async function POST(req: NextRequest) {
             isPaid: true,
           }
         }),
+        prisma.user.update({
+          where: { id: referrer.id },
+          data: { walletBalance: { decrement: commissionAmount } }
+        }),
         prisma.transaction.create({
           data: {
             userId: referrer.id,
@@ -90,6 +94,10 @@ export async function POST(req: NextRequest) {
       prisma.referral.update({
         where: { id: order.referral.id },
         data: { isPaid: true }
+      }),
+      prisma.user.update({
+        where: { id: referrer.id },
+        data: { walletBalance: { decrement: Number(order.referral.commissionAmount || 0) } }
       }),
       prisma.transaction.create({
         data: {

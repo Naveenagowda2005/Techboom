@@ -41,6 +41,7 @@ export default function AdminReferralsPage() {
     pending: 0,
     totalCommission: 0
   })
+  const [backfilling, setBackfilling] = useState(false)
 
   const fetchReferrals = async () => {
     setLoading(true)
@@ -173,11 +174,50 @@ export default function AdminReferralsPage() {
     }
   }
 
+  const runBackfill = async () => {
+    if (!confirm('This will create transaction records for all existing paid commissions. Continue?')) return
+
+    setBackfilling(true)
+    const token = localStorage.getItem('access_token')
+    
+    try {
+      const res = await fetch('/api/admin/backfill-commissions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        }
+      })
+
+      const data = await res.json()
+      if (data.success) {
+        alert(`Backfill completed!\n\nCreated: ${data.data.created}\nUpdated: ${data.data.updated}\nSkipped: ${data.data.skipped}\nTotal: ${data.data.total}`)
+        fetchReferrals()
+      } else {
+        alert(data.message || 'Backfill failed')
+      }
+    } catch (error) {
+      console.error('Error running backfill:', error)
+      alert('Failed to run backfill')
+    } finally {
+      setBackfilling(false)
+    }
+  }
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-black text-white">Referrals</h1>
-        <p className="text-white/50 text-sm mt-1">Manage referral program and commissions</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-black text-white">Referrals</h1>
+          <p className="text-white/50 text-sm mt-1">Manage referral program and commissions</p>
+        </div>
+        <button
+          onClick={runBackfill}
+          disabled={backfilling}
+          className="px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-600/50 text-white rounded-lg text-sm font-medium transition-colors"
+        >
+          {backfilling ? 'Running...' : 'Backfill Transactions'}
+        </button>
       </div>
 
       {/* Stats Cards */}

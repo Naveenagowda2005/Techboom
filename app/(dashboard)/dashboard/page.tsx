@@ -139,7 +139,7 @@ export default function DashboardPage() {
                     Welcome Bonus: {user.firstOrderDiscount}% OFF Your First Order!
                   </h3>
                   <p className="text-white/70 text-sm mb-4">
-                    You've been referred by a friend! Get {user.firstOrderDiscount}% discount on your first service booking. 
+                    You&apos;ve been referred by a friend! Get {user.firstOrderDiscount}% discount on your first service booking. 
                     This discount will be applied automatically when you place your first order.
                   </p>
                   <Link 

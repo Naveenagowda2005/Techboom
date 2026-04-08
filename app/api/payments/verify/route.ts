@@ -6,7 +6,7 @@ import { successResponse, errorResponse, handleApiError } from '@/lib/api-respon
 
 export async function POST(req: NextRequest) {
   try {
-    const { userId } = requireAuth(req)
+    requireAuth(req)
     const { razorpayOrderId, razorpayPaymentId, razorpaySignature } = await req.json()
 
     if (!razorpayOrderId || !razorpayPaymentId || !razorpaySignature) {

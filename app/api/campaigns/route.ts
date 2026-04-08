@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { requireAuth, requireRole } from '@/lib/auth'
+import { requireAuth } from '@/lib/auth'
 import { successResponse, errorResponse, handleApiError } from '@/lib/api-response'
 import { getPaginationMeta } from '@/lib/utils'
 import { parsePagination } from '@/lib/validations'

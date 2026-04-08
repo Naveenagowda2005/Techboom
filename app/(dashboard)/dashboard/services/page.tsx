@@ -371,7 +371,7 @@ export default function ServicesPage() {
               {/* Features */}
               {selectedService.features?.length > 0 && (
                 <div>
-                  <h4 className="text-white font-bold mb-3">What's Included</h4>
+                  <h4 className="text-white font-bold mb-3">What&apos;s Included</h4>
                   <ul className="space-y-2">
                     {selectedService.features.map((feature, idx) => (
                       <li key={idx} className="text-white/70 flex items-start gap-3">

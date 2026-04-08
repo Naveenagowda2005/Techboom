@@ -178,7 +178,7 @@ export default function ReferralsPage() {
           <div className="bg-gradient-to-br from-purple-900/95 to-indigo-900/95 border border-white/10 rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="p-6 border-b border-white/10 flex items-center justify-between sticky top-0 bg-gradient-to-br from-purple-900 to-indigo-900 z-10">
               <div>
-                <h3 className="text-2xl font-bold text-white">{selectedUser.name}'s Orders</h3>
+                <h3 className="text-2xl font-bold text-white">{selectedUser.name}&apos;s Orders</h3>
                 <p className="text-white/60 text-sm">{selectedUser.email}</p>
               </div>
               <button

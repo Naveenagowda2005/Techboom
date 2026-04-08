@@ -1,4 +1,4 @@
-import { SignJWT, jwtVerify } from 'jose'
+import { jwtVerify } from 'jose'
 
 const ACCESS_SECRET = new TextEncoder().encode(process.env.JWT_ACCESS_SECRET!)
 const REFRESH_SECRET = new TextEncoder().encode(process.env.JWT_REFRESH_SECRET!)

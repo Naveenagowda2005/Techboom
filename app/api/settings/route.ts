@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   try {
     const { userId } = requireAuth(req)
-    requireRole(req, 'ADMIN')
+    requireRole(req, ['ADMIN'])
 
     const body = await req.json()
 

@@ -1,12 +1,10 @@
 'use client'
 import { useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import Input from '../../../components/ui/Input'
 import Button from '../../../components/ui/Button'
 
 export default function LoginPage() {
-  const router = useRouter()
   const [form, setForm] = useState({ email: '', password: '' })
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(false)

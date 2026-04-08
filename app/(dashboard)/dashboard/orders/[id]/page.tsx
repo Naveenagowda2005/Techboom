@@ -351,7 +351,7 @@ export default function OrderDetailPage() {
 
             {order.service.features?.length > 0 && (
               <div className="mt-6 pt-6 border-t border-white/10">
-                <h4 className="text-white font-semibold mb-3">What's Included</h4>
+                <h4 className="text-white font-semibold mb-3">What&apos;s Included</h4>
                 <ul className="space-y-2">
                   {order.service.features.map((feature, idx) => (
                     <li key={idx} className="text-white/70 text-sm flex items-start gap-3">

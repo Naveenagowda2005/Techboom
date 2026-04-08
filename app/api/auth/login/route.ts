@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import bcrypt from 'bcryptjs'
 import { prisma } from '@/lib/prisma'
 import { generateTokenPair } from '@/lib/jwt'
@@ -52,7 +52,9 @@ export async function POST(req: NextRequest) {
       data: { refreshToken: tokens.refreshToken },
     })
 
-    const { password: _, ...safeUser } = user
+    const { password: _password, ...safeUser } = user
+    // Suppress unused variable warning - password is intentionally destructured and not used
+    void _password
 
     const response = successResponse({ user: safeUser, accessToken: tokens.accessToken, refreshToken: tokens.refreshToken }, 'Login successful')
     response.cookies.set('access_token', tokens.accessToken, {

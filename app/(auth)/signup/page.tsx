@@ -1,13 +1,12 @@
 'use client'
 import { useState } from 'react'
 import Link from 'next/link'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import Input from '../../../components/ui/Input'
 import Button from '../../../components/ui/Button'
 import { Suspense } from 'react'
 
 function SignupForm() {
-  const router = useRouter()
   const searchParams = useSearchParams()
   const refCode = searchParams.get('ref') || ''
 

@@ -62,7 +62,7 @@ export default function OrdersPage() {
       } else {
         alert(data.message || 'Failed to delete order')
       }
-    } catch (error) {
+    } catch {
       alert('Failed to delete order')
     } finally {
       setDeleting(null)

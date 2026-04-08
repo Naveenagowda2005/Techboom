@@ -3,11 +3,11 @@ import { prisma } from '@/lib/prisma'
 import { requireAuth } from '@/lib/auth'
 import { successResponse, errorResponse, handleApiError } from '@/lib/api-response'
 import { getPaginationMeta } from '@/lib/utils'
-import { paginationSchema, parsePagination } from '@/lib/validations'
+import { parsePagination } from '@/lib/validations'
 
 export async function GET(req: NextRequest) {
   try {
-    const { userId, role } = requireAuth(req)
+    const { userId } = requireAuth(req)
     const { searchParams } = new URL(req.url)
     
     // Parse pagination with fallback
@@ -63,7 +63,7 @@ export async function GET(req: NextRequest) {
     ])
 
     // Get referral records (orders with commissions) - only completed orders
-    const referralStats = await prisma.referral.aggregate({
+    await prisma.referral.aggregate({
       where: { 
         referrerId: userId,
         order: { status: 'COMPLETED' }

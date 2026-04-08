@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { requireAuth, requireRole } from '@/lib/auth'
+import { requireAuth } from '@/lib/auth'
 import { successResponse, forbiddenResponse, notFoundResponse, handleApiError } from '@/lib/api-response'
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {

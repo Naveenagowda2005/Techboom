@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
           }),
         ])
         created++
-      } else if (order.referral.commissionAmount === 0) {
+      } else if (Number(order.referral.commissionAmount) === 0) {
         // Update existing referral with commission
         await prisma.$transaction([
           prisma.referral.update({

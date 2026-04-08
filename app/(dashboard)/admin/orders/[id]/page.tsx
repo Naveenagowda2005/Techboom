@@ -149,7 +149,7 @@ export default function AdminOrderDetailPage() {
       } else {
         alert(data.message || 'Failed to update status')
       }
-    } catch (error) {
+    } catch {
       alert('Failed to update status')
     } finally {
       setUpdating(false)

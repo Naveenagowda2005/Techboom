@@ -50,26 +50,58 @@ export async function POST(req: NextRequest) {
 
       const commissionAmount = Number(order.amount) * 0.10
 
-      // Create the referral record
-      await prisma.referral.create({
-        data: {
-          referrerId: referrer.id,
-          referredUserId: order.userId,
-          orderId: order.id,
-          referralCode: referralCode,
-          commissionAmount,
-          isPaid: true, // Mark as paid immediately
-        }
-      })
+      // Create the referral record and transaction in a transaction
+      await prisma.$transaction([
+        prisma.referral.create({
+          data: {
+            referrerId: referrer.id,
+            referredUserId: order.userId,
+            orderId: order.id,
+            referralCode: referralCode,
+            commissionAmount,
+            isPaid: true,
+          }
+        }),
+        prisma.transaction.create({
+          data: {
+            userId: referrer.id,
+            type: 'COMMISSION',
+            amount: commissionAmount,
+            status: 'COMPLETED',
+            description: `Commission payment for order ${order.orderNumber}`,
+            referenceId: order.id,
+          }
+        })
+      ])
 
       return successResponse({ message: 'Referral record created and marked as paid successfully' })
     }
 
-    // Update existing referral record to mark as paid
-    await prisma.referral.update({
-      where: { id: order.referral.id },
-      data: { isPaid: true }
+    // Update existing referral record to mark as paid and create transaction
+    const referrer = await prisma.user.findUnique({
+      where: { referralCode: referralCode }
     })
+
+    if (!referrer) {
+      return errorResponse('Referrer not found', 404)
+    }
+
+    await prisma.$transaction([
+      prisma.referral.update({
+        where: { id: order.referral.id },
+        data: { isPaid: true }
+      }),
+      prisma.transaction.create({
+        data: {
+          userId: referrer.id,
+          type: 'COMMISSION',
+          amount: Number(order.referral.commissionAmount || 0),
+          status: 'COMPLETED',
+          description: `Commission payment for order ${order.orderNumber}`,
+          referenceId: order.id,
+        }
+      })
+    ])
 
     return successResponse({ message: 'Commission marked as paid successfully' })
   } catch (error) {

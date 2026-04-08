@@ -25,28 +25,11 @@ export default function WalletPage() {
     const token = localStorage.getItem('access_token')
     Promise.all([
       fetch('/api/auth/me', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
-      fetch('/api/referrals', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
-    ]).then(([user, refs]) => {
+      fetch('/api/transactions', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
+    ]).then(([user, txData]) => {
       if (user.success) setBalance(Number(user.data.walletBalance))
-      if (refs.success && refs.data.referredUsers) {
-        // Extract all completed orders from referred users and map as transactions
-        const commissionTransactions: Transaction[] = []
-        refs.data.referredUsers.forEach((refUser: any) => {
-          refUser.orders?.forEach((order: any) => {
-            if (order.status === 'COMPLETED') {
-              const commissionAmount = Number(order.amount) * 0.1
-              commissionTransactions.push({
-                id: order.id,
-                type: 'COMMISSION',
-                amount: commissionAmount,
-                status: 'COMPLETED',
-                description: `Commission for order ${order.orderNumber}`,
-                createdAt: order.createdAt,
-              })
-            }
-          })
-        })
-        setTransactions(commissionTransactions)
+      if (txData.success && txData.data) {
+        setTransactions(txData.data)
       }
     }).finally(() => setLoading(false))
   }, [])

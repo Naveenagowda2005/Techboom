@@ -7,7 +7,7 @@ import { parsePagination } from '@/lib/validations'
 
 export async function GET(req: NextRequest) {
   try {
-    const { userId } = requireAuth(req)
+    const { userId, role } = requireAuth(req)
     const { searchParams } = new URL(req.url)
     
     // Parse pagination with fallback
@@ -21,6 +21,51 @@ export async function GET(req: NextRequest) {
       console.error('Pagination parse error:', error)
     }
 
+    // Admin view: Get all referrals across the platform
+    if (role === 'ADMIN') {
+      const [referrals, totalReferrals] = await Promise.all([
+        prisma.referral.findMany({
+          skip: (page - 1) * limit,
+          take: limit,
+          orderBy: { createdAt: 'desc' },
+          include: {
+            referrer: {
+              select: {
+                name: true,
+                email: true,
+              }
+            },
+            order: {
+              select: {
+                orderNumber: true,
+                amount: true,
+                status: true,
+                user: {
+                  select: {
+                    name: true,
+                    email: true,
+                  }
+                }
+              }
+            }
+          }
+        }),
+        prisma.referral.count()
+      ])
+
+      // Transform data to include referred user from order
+      const transformedReferrals = referrals.map(ref => ({
+        ...ref,
+        referredUser: ref.order?.user || { name: 'N/A', email: 'N/A' }
+      }))
+
+      return successResponse({
+        referrals: transformedReferrals,
+        meta: getPaginationMeta(totalReferrals, page, limit),
+      })
+    }
+
+    // Regular user view: Get their own referrals
     // Get user's referral code
     const user = await prisma.user.findUnique({
       where: { id: userId },

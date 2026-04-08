@@ -76,11 +76,13 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {/* Referral Code */}
-      <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
-        <div className="text-sm text-white/50 mb-1">Your Referral Code</div>
-        <div className="text-xl font-black text-yellow-400 font-mono">{profile.referralCode}</div>
-      </div>
+      {/* Referral Code - Only show for USER role (referrers) */}
+      {profile.role === 'USER' && (
+        <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
+          <div className="text-sm text-white/50 mb-1">Your Referral Code</div>
+          <div className="text-xl font-black text-yellow-400 font-mono">{profile.referralCode}</div>
+        </div>
+      )}
 
       {/* Edit Form */}
       <form onSubmit={handleSave} className="bg-white/5 border border-white/10 rounded-2xl p-6 space-y-4">

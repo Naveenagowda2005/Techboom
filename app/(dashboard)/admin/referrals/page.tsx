@@ -14,9 +14,14 @@ interface Referral {
     name: string
     email: string
   }
+  referredUser: {
+    name: string
+    email: string
+  }
   order: {
     orderNumber: string
     amount: number
+    status: string
   } | null
 }
 
@@ -39,13 +44,14 @@ export default function AdminReferralsPage() {
       })
       const data = await res.json()
       if (data.success) {
-        setReferrals(data.data.referrals)
+        const referralsList = data.data.referrals || []
+        setReferrals(referralsList)
         
         // Calculate stats
-        const total = data.data.referrals.length
-        const paid = data.data.referrals.filter((r: Referral) => r.isPaid).length
+        const total = referralsList.length
+        const paid = referralsList.filter((r: Referral) => r.isPaid).length
         const pending = total - paid
-        const totalCommission = data.data.referrals.reduce(
+        const totalCommission = referralsList.reduce(
           (sum: number, r: Referral) => sum + (Number(r.commissionAmount) || 0),
           0
         )
@@ -130,10 +136,10 @@ export default function AdminReferralsPage() {
               <thead className="bg-white/5">
                 <tr className="text-left text-xs text-white/40">
                   <th className="px-6 py-4 font-medium">Referrer</th>
+                  <th className="px-6 py-4 font-medium">Referred User</th>
                   <th className="px-6 py-4 font-medium">Code</th>
                   <th className="px-6 py-4 font-medium">Order</th>
-                  <th className="px-6 py-4 font-medium">Commission Rate</th>
-                  <th className="px-6 py-4 font-medium">Commission Amount</th>
+                  <th className="px-6 py-4 font-medium">Commission</th>
                   <th className="px-6 py-4 font-medium">Status</th>
                   <th className="px-6 py-4 font-medium">Date</th>
                   <th className="px-6 py-4 font-medium">Actions</th>
@@ -147,6 +153,10 @@ export default function AdminReferralsPage() {
                       <div className="text-white/40 text-xs">{referral.referrer.email}</div>
                     </td>
                     <td className="px-6 py-4">
+                      <div className="font-medium text-white">{referral.referredUser.name}</div>
+                      <div className="text-white/40 text-xs">{referral.referredUser.email}</div>
+                    </td>
+                    <td className="px-6 py-4">
                       <code className="text-purple-400 bg-purple-500/10 px-2 py-1 rounded text-xs">
                         {referral.referralCode}
                       </code>
@@ -158,13 +168,20 @@ export default function AdminReferralsPage() {
                           <div className="text-white/40 text-xs">
                             {formatCurrency(referral.order.amount)}
                           </div>
+                          <div className="text-xs">
+                            <span className={`px-1.5 py-0.5 rounded text-xs ${
+                              referral.order.status === 'COMPLETED' ? 'bg-green-500/20 text-green-400' :
+                              referral.order.status === 'CONFIRMED' ? 'bg-blue-500/20 text-blue-400' :
+                              referral.order.status === 'IN_PROGRESS' ? 'bg-yellow-500/20 text-yellow-400' :
+                              'bg-gray-500/20 text-gray-400'
+                            }`}>
+                              {referral.order.status}
+                            </span>
+                          </div>
                         </div>
                       ) : (
-                        <span className="text-white/40">-</span>
+                        <span className="text-white/40">No order yet</span>
                       )}
-                    </td>
-                    <td className="px-6 py-4 text-white/60">
-                      {(Number(referral.commissionRate) * 100).toFixed(1)}%
                     </td>
                     <td className="px-6 py-4">
                       <span className="text-yellow-400 font-semibold">

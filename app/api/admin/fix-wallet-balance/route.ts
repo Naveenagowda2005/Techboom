@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
     let updated = 0
 
     // Update wallet balance for each referrer
-    for (const [referralCode, data] of referrerMap.entries()) {
+    for (const [referralCode, data] of Array.from(referrerMap.entries())) {
       const correctBalance = data.totalCommission - data.paidCommission
 
       const referrer = await prisma.user.findUnique({

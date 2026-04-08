@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
 
       const commissionAmount = Number(order.amount) * 0.10
 
-      // Create the referral record and transaction in a transaction
+      // Create the referral record and transaction
       await prisma.$transaction([
         prisma.referral.create({
           data: {

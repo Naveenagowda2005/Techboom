@@ -18,6 +18,7 @@ export async function GET(req: NextRequest) {
         avatar: true,
         referralCode: true,
         walletBalance: true,
+        upiId: true,
         isVerified: true,
         firstOrderDiscount: true,
         hasUsedFirstOrderDiscount: true,

@@ -30,15 +30,18 @@ export async function POST(req: NextRequest) {
       return errorResponse('Order not found', 404)
     }
 
-    if (!order.referralCode) {
-      return errorResponse('This order was not placed with a referral code', 400)
+    // Get referral code from order or from user who placed the order
+    let referralCode = order.referralCode || order.user.referredBy
+
+    if (!referralCode) {
+      return errorResponse('This order is not associated with any referral', 400)
     }
 
     // If no referral record exists, create it first
     if (!order.referral) {
       // Find the referrer
       const referrer = await prisma.user.findUnique({
-        where: { referralCode: order.referralCode }
+        where: { referralCode: referralCode }
       })
 
       if (!referrer) {
@@ -53,7 +56,7 @@ export async function POST(req: NextRequest) {
           referrerId: referrer.id,
           referredUserId: order.userId,
           orderId: order.id,
-          referralCode: order.referralCode,
+          referralCode: referralCode,
           commissionAmount,
           isPaid: true, // Mark as paid immediately
         }

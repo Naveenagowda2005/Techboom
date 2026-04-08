@@ -19,7 +19,8 @@ export default function WalletPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [loading, setLoading] = useState(true)
   const [showWithdraw, setShowWithdraw] = useState(false)
-  const [withdrawForm, setWithdrawForm] = useState({ amount: '', bankAccount: '', ifscCode: '' })
+  const [upiId, setUpiId] = useState('')
+  const [savingUpi, setSavingUpi] = useState(false)
 
   useEffect(() => {
     const token = localStorage.getItem('access_token')
@@ -27,7 +28,10 @@ export default function WalletPage() {
       fetch('/api/auth/me', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
       fetch('/api/transactions', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
     ]).then(([user, txData]) => {
-      if (user.success) setBalance(Number(user.data.walletBalance))
+      if (user.success) {
+        setBalance(Number(user.data.walletBalance))
+        setUpiId(user.data.upiId || '')
+      }
       if (txData.success && txData.data) {
         setTransactions(txData.data)
       }
@@ -41,6 +45,46 @@ export default function WalletPage() {
     REFUND: 'text-blue-400',
   }
 
+  const saveUpiId = async () => {
+    if (!upiId.trim()) {
+      alert('Please enter your UPI ID')
+      return
+    }
+
+    // Basic UPI ID validation
+    if (!upiId.includes('@')) {
+      alert('Invalid UPI ID format. Should be like: username@bank')
+      return
+    }
+
+    setSavingUpi(true)
+    const token = localStorage.getItem('access_token')
+
+    try {
+      const res = await fetch('/api/users/update-upi', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ upiId })
+      })
+
+      const data = await res.json()
+      if (data.success) {
+        alert('UPI ID saved successfully! Admin will use this for commission payments.')
+        setShowWithdraw(false)
+      } else {
+        alert(data.message || 'Failed to save UPI ID')
+      }
+    } catch (error) {
+      console.error('Error saving UPI ID:', error)
+      alert('Failed to save UPI ID')
+    } finally {
+      setSavingUpi(false)
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -52,39 +96,59 @@ export default function WalletPage() {
       <div className="bg-gradient-to-br from-purple-600/30 to-yellow-600/10 border border-purple-500/30 rounded-2xl p-8">
         <p className="text-white/60 text-sm mb-2">Available Balance</p>
         <div className="text-5xl font-black text-white mb-6">{formatCurrency(balance)}</div>
+        
+        {upiId ? (
+          <div className="mb-4">
+            <p className="text-white/60 text-sm mb-1">Your UPI ID</p>
+            <div className="flex items-center gap-2">
+              <code className="text-purple-400 bg-purple-500/10 px-3 py-2 rounded text-sm">
+                {upiId}
+              </code>
+              <Button onClick={() => setShowWithdraw(!showWithdraw)} variant="ghost" size="sm">
+                Update
+              </Button>
+            </div>
+            <p className="text-white/40 text-xs mt-2">
+              Admin will transfer commissions to this UPI ID
+            </p>
+          </div>
+        ) : (
+          <div className="mb-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3">
+            <p className="text-yellow-400 text-sm">
+              ⚠️ Please add your UPI ID to receive commission payments
+            </p>
+          </div>
+        )}
+        
         <Button onClick={() => setShowWithdraw(!showWithdraw)} variant="accent">
-          Withdraw Funds
+          {upiId ? 'Update UPI ID' : 'Add UPI ID'}
         </Button>
       </div>
 
-      {/* Withdraw Form */}
+      {/* UPI Form */}
       {showWithdraw && (
         <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
-          <h3 className="text-lg font-bold text-white mb-4">Withdraw Request</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <h3 className="text-lg font-bold text-white mb-4">
+            {upiId ? 'Update UPI ID' : 'Add UPI ID for Payments'}
+          </h3>
+          <p className="text-white/60 text-sm mb-4">
+            Enter your UPI ID to receive commission payments from admin. Format: username@bank (e.g., john@paytm, user@ybl)
+          </p>
+          <div className="max-w-md">
             <Input
-              label="Amount (₹)"
-              type="number"
-              placeholder="Min ₹100"
-              value={withdrawForm.amount}
-              onChange={(e) => setWithdrawForm({ ...withdrawForm, amount: e.target.value })}
+              label="UPI ID"
+              placeholder="username@bank"
+              value={upiId}
+              onChange={(e) => setUpiId(e.target.value)}
             />
-            <Input
-              label="Bank Account Number"
-              placeholder="Account number"
-              value={withdrawForm.bankAccount}
-              onChange={(e) => setWithdrawForm({ ...withdrawForm, bankAccount: e.target.value })}
-            />
-            <Input
-              label="IFSC Code"
-              placeholder="SBIN0001234"
-              value={withdrawForm.ifscCode}
-              onChange={(e) => setWithdrawForm({ ...withdrawForm, ifscCode: e.target.value })}
-            />
-          </div>
-          <div className="flex gap-3 mt-4">
-            <Button size="sm">Submit Request</Button>
-            <Button variant="ghost" size="sm" onClick={() => setShowWithdraw(false)}>Cancel</Button>
+            <div className="flex gap-3 mt-4">
+              <Button onClick={saveUpiId} disabled={savingUpi} size="sm">
+                {savingUpi ? 'Saving...' : 'Save UPI ID'}
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => setShowWithdraw(false)}>
+                Cancel
+              </Button>
+            </div>
           </div>
         </div>
       )}

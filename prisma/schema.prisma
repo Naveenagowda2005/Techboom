@@ -59,6 +59,7 @@ model User {
   referralCode   String    @unique
   referredBy     String?
   walletBalance  Decimal   @default(0) @db.Decimal(10, 2)
+  upiId          String?   // UPI ID for commission payments
   firstOrderDiscount Int    @default(0) // Percentage discount for first order
   hasUsedFirstOrderDiscount Boolean @default(false)
   refreshToken   String?

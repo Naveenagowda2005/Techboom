@@ -64,10 +64,16 @@ export async function GET(req: NextRequest) {
 
       // Get referrer info for each user
       const referralCodes = Array.from(new Set(referredUsers.map(u => u.referredBy).filter(Boolean))) as string[]
-      const referrers = await prisma.user.findMany({
-        where: { referralCode: { in: referralCodes } },
-        select: { referralCode: true, name: true, email: true }
+      const referrersRaw = await prisma.user.findMany({
+        where: { referralCode: { in: referralCodes } }
       })
+      
+      const referrers = referrersRaw.map(r => ({
+        referralCode: r.referralCode,
+        name: r.name,
+        email: r.email,
+        upiId: r.upiId
+      }))
       
       const referrerMap = new Map(referrers.map(r => [r.referralCode, r]))
 
@@ -85,7 +91,7 @@ export async function GET(req: NextRequest) {
             commissionAmount: 0,
             isPaid: false,
             createdAt: user.createdAt,
-            referrer: referrer || { name: 'Unknown', email: 'N/A' },
+            referrer: referrer || { name: 'Unknown', email: 'N/A', upiId: null },
             referredUser: { name: user.name, email: user.email },
             order: null
           }]
@@ -99,7 +105,7 @@ export async function GET(req: NextRequest) {
           commissionAmount: Number(order.referral?.commissionAmount || 0) || (Number(order.amount) * 0.10),
           isPaid: order.referral?.isPaid || false,
           createdAt: order.createdAt,
-          referrer: referrer || { name: 'Unknown', email: 'N/A' },
+          referrer: referrer || { name: 'Unknown', email: 'N/A', upiId: null },
           referredUser: { name: user.name, email: user.email },
           order: {
             orderNumber: order.orderNumber,

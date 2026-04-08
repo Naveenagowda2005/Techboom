@@ -21,6 +21,7 @@ interface ReferrerGroup {
   referrer: {
     name: string
     email: string
+    upiId: string | null
   }
   referralCode: string
   referredUsers: ReferredUser[]
@@ -273,6 +274,16 @@ export default function AdminReferralsPage() {
                     <td className="px-6 py-4">
                       <div className="font-medium text-white">{referrer.referrer.name}</div>
                       <div className="text-white/40 text-xs">{referrer.referrer.email}</div>
+                      {referrer.referrer.upiId && (
+                        <div className="mt-1">
+                          <code className="text-green-400 bg-green-500/10 px-2 py-0.5 rounded text-xs">
+                            UPI: {referrer.referrer.upiId}
+                          </code>
+                        </div>
+                      )}
+                      {!referrer.referrer.upiId && referrer.pendingCommission > 0 && (
+                        <div className="text-yellow-400 text-xs mt-1">⚠️ No UPI ID</div>
+                      )}
                     </td>
                     <td className="px-6 py-4">
                       <code className="text-purple-400 bg-purple-500/10 px-2 py-1 rounded text-xs">
@@ -323,6 +334,18 @@ export default function AdminReferralsPage() {
               <div>
                 <h3 className="text-2xl font-bold text-white">{selectedReferrer.referrer.name}&apos;s Referrals</h3>
                 <p className="text-white/60 text-sm">{selectedReferrer.referrer.email}</p>
+                {selectedReferrer.referrer.upiId ? (
+                  <div className="mt-2">
+                    <span className="text-white/60 text-xs">UPI ID: </span>
+                    <code className="text-green-400 bg-green-500/10 px-2 py-1 rounded text-sm">
+                      {selectedReferrer.referrer.upiId}
+                    </code>
+                  </div>
+                ) : (
+                  <div className="mt-2 text-yellow-400 text-sm">
+                    ⚠️ No UPI ID provided yet
+                  </div>
+                )}
                 <code className="text-purple-400 bg-purple-500/10 px-2 py-1 rounded text-xs mt-2 inline-block">
                   {selectedReferrer.referralCode}
                 </code>
@@ -395,12 +418,20 @@ export default function AdminReferralsPage() {
                                   {order.isPaid ? 'Paid' : 'Pending'}
                                 </span>
                                 {!order.isPaid && order.commissionAmount > 0 && (
-                                  <button
-                                    onClick={() => markOrderAsPaid(order, selectedReferrer)}
-                                    className="text-green-400 hover:text-green-300 text-xs px-2 py-1 bg-green-500/10 rounded"
-                                  >
-                                    Mark Paid
-                                  </button>
+                                  <>
+                                    {selectedReferrer.referrer.upiId ? (
+                                      <button
+                                        onClick={() => markOrderAsPaid(order, selectedReferrer)}
+                                        className="text-green-400 hover:text-green-300 text-xs px-2 py-1 bg-green-500/10 rounded"
+                                      >
+                                        Mark Paid
+                                      </button>
+                                    ) : (
+                                      <span className="text-yellow-400 text-xs px-2 py-1 bg-yellow-500/10 rounded">
+                                        No UPI ID
+                                      </span>
+                                    )}
+                                  </>
                                 )}
                               </div>
                             </div>

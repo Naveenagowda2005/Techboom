@@ -112,8 +112,11 @@ export default function OrdersPage() {
           const verifyData = await verifyRes.json()
 
           if (verifyData.success) {
-            alert('Payment successful!')
-            fetchOrders()
+            alert('Payment successful! Redirecting to orders page...')
+            // Refresh orders list and stay on page
+            setTimeout(() => {
+              fetchOrders()
+            }, 1000)
           } else {
             alert('Payment verification failed')
           }

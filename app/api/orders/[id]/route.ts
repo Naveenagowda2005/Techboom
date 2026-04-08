@@ -54,71 +54,63 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       },
     })
 
-    // Auto commission on order completion
-    if (status === 'COMPLETED' && order.referralCode) {
-      const referrer = await prisma.user.findUnique({ where: { referralCode: order.referralCode } })
-      if (referrer) {
-        const commissionAmount = Number(order.amount) * 0.10
+    // Handle commission based on order status
+    if (status === 'COMPLETED') {
+      // Order completed - add commission
+      const orderUser = await prisma.user.findUnique({
+        where: { id: order.userId },
+        select: { referredBy: true }
+      })
 
-        // Check if referral record already exists
-        const existingReferral = await prisma.referral.findUnique({
-          where: { orderId: order.id }
-        })
+      const referralCode = order.referralCode || orderUser?.referredBy
 
-        if (existingReferral) {
-          // Update existing referral with commission
-          await prisma.$transaction([
-            prisma.referral.update({
+      if (referralCode) {
+        const referrer = await prisma.user.findUnique({ where: { referralCode } })
+        if (referrer) {
+          const commissionAmount = Number(order.amount) * 0.10
+
+          const existingReferral = await prisma.referral.findUnique({
+            where: { orderId: order.id }
+          })
+
+          if (existingReferral) {
+            // Update existing referral with commission
+            await prisma.referral.update({
               where: { orderId: order.id },
               data: {
                 commissionAmount,
                 isPaid: false,
               },
-            }),
-            prisma.user.update({
-              where: { id: referrer.id },
-              data: { walletBalance: { increment: commissionAmount } },
-            }),
-            prisma.transaction.create({
-              data: {
-                userId: referrer.id,
-                type: 'COMMISSION',
-                amount: commissionAmount,
-                status: 'COMPLETED',
-                description: `Commission for order ${order.orderNumber}`,
-                referenceId: order.id,
-              },
-            }),
-          ])
-        } else {
-          // Create new referral record (fallback if it doesn't exist)
-          await prisma.$transaction([
-            prisma.referral.create({
+            })
+          } else {
+            // Create new referral record
+            await prisma.referral.create({
               data: {
                 referrerId: referrer.id,
                 referredUserId: order.userId,
                 orderId: order.id,
-                referralCode: order.referralCode,
+                referralCode: referralCode,
                 commissionAmount,
                 isPaid: false,
               },
-            }),
-            prisma.user.update({
-              where: { id: referrer.id },
-              data: { walletBalance: { increment: commissionAmount } },
-            }),
-            prisma.transaction.create({
-              data: {
-                userId: referrer.id,
-                type: 'COMMISSION',
-                amount: commissionAmount,
-                status: 'COMPLETED',
-                description: `Commission for order ${order.orderNumber}`,
-                referenceId: order.id,
-              },
-            }),
-          ])
+            })
+          }
         }
+      }
+    } else if (['CONFIRMED', 'IN_PROGRESS', 'PENDING', 'CANCELLED', 'REFUNDED'].includes(status)) {
+      // Order status changed from COMPLETED to something else - remove commission
+      const existingReferral = await prisma.referral.findUnique({
+        where: { orderId: order.id }
+      })
+
+      if (existingReferral && !existingReferral.isPaid) {
+        // Only remove commission if it hasn't been paid yet
+        await prisma.referral.update({
+          where: { orderId: order.id },
+          data: {
+            commissionAmount: 0,
+          },
+        })
       }
     }
 

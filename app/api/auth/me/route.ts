@@ -17,7 +17,6 @@ export async function GET(req: NextRequest) {
         phone: true,
         avatar: true,
         referralCode: true,
-        walletBalance: true,
         upiId: true,
         isVerified: true,
         firstOrderDiscount: true,
@@ -32,7 +31,27 @@ export async function GET(req: NextRequest) {
       },
     })
 
-    return successResponse(user)
+    if (!user) {
+      return errorResponse('User not found', 404)
+    }
+
+    // Calculate wallet balance dynamically from unpaid referrals
+    const unpaidReferrals = await prisma.referral.findMany({
+      where: { 
+        referrerId: userId,
+        isPaid: false
+      },
+      select: { commissionAmount: true }
+    })
+
+    const walletBalance = unpaidReferrals.reduce((sum, ref) => {
+      return sum + (ref.commissionAmount ? Number(ref.commissionAmount) : 0)
+    }, 0)
+
+    return successResponse({
+      ...user,
+      walletBalance
+    })
   } catch (error) {
     return handleApiError(error)
   }

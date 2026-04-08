@@ -152,7 +152,10 @@ export default function ServicesPage() {
 
           if (verifyData.success) {
             setSuccess(orderNumber)
-            setTimeout(() => setSuccess(null), 5000)
+            // Redirect to orders page after 1 second
+            setTimeout(() => {
+              window.location.href = '/dashboard/orders'
+            }, 1000)
           } else {
             alert('Payment verification failed')
           }

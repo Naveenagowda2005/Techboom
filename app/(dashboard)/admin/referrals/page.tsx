@@ -205,6 +205,36 @@ export default function AdminReferralsPage() {
     }
   }
 
+  const fixWalletBalances = async () => {
+    if (!confirm('This will recalculate and fix all wallet balances. Continue?')) return
+
+    setBackfilling(true)
+    const token = localStorage.getItem('access_token')
+    
+    try {
+      const res = await fetch('/api/admin/fix-wallet-balance', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        }
+      })
+
+      const data = await res.json()
+      if (data.success) {
+        alert(`Wallet balances fixed!\n\nUpdated: ${data.data.updated} users`)
+        fetchReferrals()
+      } else {
+        alert(data.message || 'Fix failed')
+      }
+    } catch (error) {
+      console.error('Error fixing balances:', error)
+      alert('Failed to fix wallet balances')
+    } finally {
+      setBackfilling(false)
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -212,13 +242,22 @@ export default function AdminReferralsPage() {
           <h1 className="text-2xl font-black text-white">Referrals</h1>
           <p className="text-white/50 text-sm mt-1">Manage referral program and commissions</p>
         </div>
-        <button
-          onClick={runBackfill}
-          disabled={backfilling}
-          className="px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-600/50 text-white rounded-lg text-sm font-medium transition-colors"
-        >
-          {backfilling ? 'Running...' : 'Backfill Transactions'}
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={fixWalletBalances}
+            disabled={backfilling}
+            className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-green-600/50 text-white rounded-lg text-sm font-medium transition-colors"
+          >
+            {backfilling ? 'Running...' : 'Fix Wallet Balances'}
+          </button>
+          <button
+            onClick={runBackfill}
+            disabled={backfilling}
+            className="px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-600/50 text-white rounded-lg text-sm font-medium transition-colors"
+          >
+            {backfilling ? 'Running...' : 'Backfill Transactions'}
+          </button>
+        </div>
       </div>
 
       {/* Stats Cards */}

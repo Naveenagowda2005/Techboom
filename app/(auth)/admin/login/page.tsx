@@ -96,7 +96,7 @@ export default function AdminLoginPage() {
             <Input
               label="Admin Email"
               type="email"
-              placeholder="admin@techboom.in"
+              placeholder="Enter your admin email"
               value={form.email}
               onChange={(e) => setForm({ ...form, email: e.target.value })}
               error={errors.email?.[0]}

@@ -51,3 +51,49 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     return handleApiError(error)
   }
 }
+
+export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+  try {
+    const { role } = requireAuth(req)
+    if (role !== 'ADMIN') return forbiddenResponse()
+
+    // Check if user exists and get their role
+    const user = await prisma.user.findUnique({
+      where: { id: params.id },
+      select: { role: true, name: true }
+    })
+
+    if (!user) return notFoundResponse('User not found')
+
+    // Prevent deleting admin users
+    if (user.role === 'ADMIN') {
+      return forbiddenResponse('Cannot delete admin users')
+    }
+
+    // Delete user and all related data
+    await prisma.$transaction([
+      // Delete user's transactions
+      prisma.transaction.deleteMany({ where: { userId: params.id } }),
+      // Delete user's referrals (as referrer)
+      prisma.referral.deleteMany({ where: { referrerId: params.id } }),
+      // Delete user's payments
+      prisma.payment.deleteMany({ 
+        where: { 
+          order: { userId: params.id } 
+        } 
+      }),
+      // Delete user's orders
+      prisma.order.deleteMany({ where: { userId: params.id } }),
+      // Delete user's campaign participations
+      prisma.campaignParticipant.deleteMany({ where: { userId: params.id } }),
+      // Delete user's campaigns
+      prisma.influencerCampaign.deleteMany({ where: { userId: params.id } }),
+      // Finally delete the user
+      prisma.user.delete({ where: { id: params.id } })
+    ])
+
+    return successResponse(null, 'User deleted successfully')
+  } catch (error) {
+    return handleApiError(error)
+  }
+}

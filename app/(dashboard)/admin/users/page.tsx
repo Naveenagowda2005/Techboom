@@ -68,6 +68,32 @@ export default function AdminUsersPage() {
     fetchUsers()
   }
 
+  const handleDelete = async (userId: string, userName: string) => {
+    if (!confirm(`Are you sure you want to delete user "${userName}"? This action cannot be undone.`)) {
+      return
+    }
+
+    const token = localStorage.getItem('access_token')
+    try {
+      const res = await fetch(`/api/users/${userId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      
+      const data = await res.json()
+      
+      if (data.success) {
+        alert('User deleted successfully')
+        fetchUsers()
+      } else {
+        alert(data.message || 'Failed to delete user')
+      }
+    } catch (error) {
+      console.error('Delete error:', error)
+      alert('Failed to delete user')
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -178,12 +204,25 @@ export default function AdminUsersPage() {
                     </td>
                     <td className="px-6 py-4 text-white/40">{formatDate(user.createdAt)}</td>
                     <td className="px-6 py-4">
-                      <button
-                        onClick={() => toggleActive(user.id, user.isActive)}
-                        className={`text-xs font-medium px-3 py-1 rounded-lg transition-colors ${user.isActive ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30' : 'bg-green-500/20 text-green-400 hover:bg-green-500/30'}`}
-                      >
-                        {user.isActive ? 'Deactivate' : 'Activate'}
-                      </button>
+                      {user.role === 'ADMIN' ? (
+                        <span className="text-xs text-white/30">Protected</span>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => toggleActive(user.id, user.isActive)}
+                            className={`text-xs font-medium px-3 py-1 rounded-lg transition-colors ${user.isActive ? 'bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30' : 'bg-green-500/20 text-green-400 hover:bg-green-500/30'}`}
+                          >
+                            {user.isActive ? 'Deactivate' : 'Activate'}
+                          </button>
+                          <button
+                            onClick={() => handleDelete(user.id, user.name)}
+                            className="text-xs font-medium px-3 py-1 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors"
+                            title="Delete user"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      )}
                     </td>
                   </tr>
                 ))}

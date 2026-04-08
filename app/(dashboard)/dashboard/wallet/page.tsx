@@ -15,8 +15,7 @@ interface Transaction {
 }
 
 export default function WalletPage() {
-  const [balance, setBalance] = useState(0) // Total wallet balance
-  const [pendingCommission, setPendingCommission] = useState(0) // Unpaid commissions
+  const [balance, setBalance] = useState(0) // Wallet balance
   const [paidOut, setPaidOut] = useState(0) // Total paid out
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [loading, setLoading] = useState(true)
@@ -29,10 +28,8 @@ export default function WalletPage() {
     Promise.all([
       fetch('/api/auth/me', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
       fetch('/api/transactions', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
-      fetch('/api/referrals', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
-    ]).then(([user, txData, referralData]) => {
+    ]).then(([user, txData]) => {
       if (user.success) {
-        // Wallet balance stays as is (accumulated commissions)
         setBalance(Number(user.data.walletBalance))
         setUpiId(user.data.upiId || '')
       }
@@ -43,14 +40,6 @@ export default function WalletPage() {
           .filter((tx: Transaction) => tx.type === 'COMMISSION')
           .reduce((sum: number, tx: Transaction) => sum + Number(tx.amount), 0)
         setPaidOut(totalPaid)
-      }
-      if (referralData.success && referralData.data.stats) {
-        // Pending = total earnings - paid out
-        const totalEarnings = Number(referralData.data.stats.totalEarnings || 0)
-        const pending = totalEarnings - (txData.data ? 
-          txData.data.filter((tx: Transaction) => tx.type === 'COMMISSION')
-            .reduce((sum: number, tx: Transaction) => sum + Number(tx.amount), 0) : 0)
-        setPendingCommission(pending)
       }
     }).finally(() => setLoading(false))
   }, [])
@@ -111,20 +100,15 @@ export default function WalletPage() {
 
       {/* Balance Card */}
       <div className="bg-gradient-to-br from-purple-600/30 to-yellow-600/10 border border-purple-500/30 rounded-2xl p-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-          <div>
-            <p className="text-white/60 text-sm mb-2">Pending Commission</p>
-            <div className="text-3xl font-black text-yellow-400">{formatCurrency(pendingCommission)}</div>
-            <p className="text-white/40 text-xs mt-1">Awaiting admin payment</p>
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           <div>
             <p className="text-white/60 text-sm mb-2">Wallet Balance</p>
-            <div className="text-3xl font-black text-white">{formatCurrency(balance)}</div>
-            <p className="text-white/40 text-xs mt-1">Total earnings accumulated</p>
+            <div className="text-5xl font-black text-white">{formatCurrency(balance)}</div>
+            <p className="text-white/40 text-xs mt-1">Unpaid commissions</p>
           </div>
           <div>
             <p className="text-white/60 text-sm mb-2">Paid Out</p>
-            <div className="text-3xl font-black text-green-400">{formatCurrency(paidOut)}</div>
+            <div className="text-5xl font-black text-green-400">{formatCurrency(paidOut)}</div>
             <p className="text-white/40 text-xs mt-1">Total paid to you</p>
           </div>
         </div>

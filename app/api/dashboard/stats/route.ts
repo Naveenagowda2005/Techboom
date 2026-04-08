@@ -92,7 +92,7 @@ export async function GET(req: NextRequest) {
     // Get user's referral code
     const referrerUser = await prisma.user.findUnique({
       where: { id: userId },
-      select: { referralCode: true, walletBalance: true }
+      select: { referralCode: true }
     })
 
     if (!referrerUser) {
@@ -105,19 +105,24 @@ export async function GET(req: NextRequest) {
       })
     }
 
-    // Get completed orders from referred users
-    const completedOrders = await prisma.order.findMany({
-      where: {
-        user: { referredBy: referrerUser.referralCode },
-        status: 'COMPLETED'
-      },
-      select: { amount: true }
+    // Get all referrals for this user
+    const referrals = await prisma.referral.findMany({
+      where: { referrerId: userId },
+      select: { 
+        commissionAmount: true,
+        isPaid: true
+      }
     })
 
-    // Calculate total earnings (10% commission)
-    const totalEarnings = completedOrders.reduce((sum, order) => {
-      return sum + (Number(order.amount) * 0.1)
-    }, 0)
+    // Calculate wallet balance from unpaid commissions
+    const walletBalance = referrals
+      .filter(ref => !ref.isPaid && ref.commissionAmount)
+      .reduce((sum, ref) => sum + Number(ref.commissionAmount), 0)
+
+    // Calculate total earnings from all paid commissions
+    const totalEarnings = referrals
+      .filter(ref => ref.isPaid && ref.commissionAmount)
+      .reduce((sum, ref) => sum + Number(ref.commissionAmount), 0)
 
     // Count pending commissions (orders that are not yet completed)
     const pendingCommissions = await prisma.order.count({
@@ -141,10 +146,10 @@ export async function GET(req: NextRequest) {
     })
 
     return successResponse({
-      totalOrders: completedOrders.length,
+      totalOrders: referrals.length,
       totalEarnings,
       pendingCommissions,
-      walletBalance: referrerUser.walletBalance || 0,
+      walletBalance,
       recentOrders,
     })
   } catch (error) {

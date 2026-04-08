@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
 
       const commissionAmount = Number(order.amount) * 0.10
 
-      // Create the referral record and transaction
+      // Create the referral record and transaction (no wallet update)
       await prisma.$transaction([
         prisma.referral.create({
           data: {
@@ -61,10 +61,6 @@ export async function POST(req: NextRequest) {
             commissionAmount,
             isPaid: true,
           }
-        }),
-        prisma.user.update({
-          where: { id: referrer.id },
-          data: { walletBalance: { decrement: commissionAmount } }
         }),
         prisma.transaction.create({
           data: {
@@ -81,7 +77,7 @@ export async function POST(req: NextRequest) {
       return successResponse({ message: 'Referral record created and marked as paid successfully' })
     }
 
-    // Update existing referral record to mark as paid and create transaction
+    // Update existing referral record to mark as paid and create transaction (no wallet update)
     const referrer = await prisma.user.findUnique({
       where: { referralCode: referralCode }
     })
@@ -94,10 +90,6 @@ export async function POST(req: NextRequest) {
       prisma.referral.update({
         where: { id: order.referral.id },
         data: { isPaid: true }
-      }),
-      prisma.user.update({
-        where: { id: referrer.id },
-        data: { walletBalance: { decrement: Number(order.referral.commissionAmount || 0) } }
       }),
       prisma.transaction.create({
         data: {

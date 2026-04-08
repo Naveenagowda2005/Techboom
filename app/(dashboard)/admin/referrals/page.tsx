@@ -43,8 +43,11 @@ export default function AdminReferralsPage() {
         headers: { Authorization: `Bearer ${token}` }
       })
       const data = await res.json()
+      console.log('Admin referrals API response:', data)
+      
       if (data.success) {
         const referralsList = data.data.referrals || []
+        console.log('Referrals list:', referralsList)
         setReferrals(referralsList)
         
         // Calculate stats
@@ -57,6 +60,8 @@ export default function AdminReferralsPage() {
         )
         
         setStats({ total, paid, pending, totalCommission })
+      } else {
+        console.error('API returned error:', data)
       }
     } catch (error) {
       console.error('Error fetching referrals:', error)

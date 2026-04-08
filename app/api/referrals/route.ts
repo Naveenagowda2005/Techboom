@@ -21,47 +21,97 @@ export async function GET(req: NextRequest) {
       console.error('Pagination parse error:', error)
     }
 
-    // Admin view: Get all referrals across the platform
+    // Admin view: Get all referred users and their referral records
     if (role === 'ADMIN') {
-      const [referrals, totalReferrals] = await Promise.all([
-        prisma.referral.findMany({
+      // Get all users who were referred (signed up with a referral code)
+      const [referredUsers, totalReferred] = await Promise.all([
+        prisma.user.findMany({
+          where: {
+            referredBy: { not: null }
+          },
           skip: (page - 1) * limit,
           take: limit,
           orderBy: { createdAt: 'desc' },
-          include: {
-            referrer: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            referredBy: true,
+            createdAt: true,
+            orders: {
+              where: { status: 'COMPLETED' },
               select: {
-                name: true,
-                email: true,
-              }
-            },
-            order: {
-              select: {
+                id: true,
                 orderNumber: true,
                 amount: true,
                 status: true,
-                user: {
+                createdAt: true,
+                referral: {
                   select: {
-                    name: true,
-                    email: true,
+                    id: true,
+                    commissionAmount: true,
+                    isPaid: true,
                   }
                 }
               }
             }
           }
         }),
-        prisma.referral.count()
+        prisma.user.count({
+          where: { referredBy: { not: null } }
+        })
       ])
 
-      // Transform data to include referred user from order
-      const transformedReferrals = referrals.map(ref => ({
-        ...ref,
-        referredUser: ref.order?.user || { name: 'N/A', email: 'N/A' }
-      }))
+      // Get referrer info for each user
+      const referralCodes = Array.from(new Set(referredUsers.map(u => u.referredBy).filter(Boolean))) as string[]
+      const referrers = await prisma.user.findMany({
+        where: { referralCode: { in: referralCodes } },
+        select: { referralCode: true, name: true, email: true }
+      })
+      
+      const referrerMap = new Map(referrers.map(r => [r.referralCode, r]))
+
+      // Transform to match expected structure
+      // @ts-ignore - Complex type inference with flatMap
+      const transformedData = (referredUsers.flatMap(user => {
+        const referrer = referrerMap.get(user.referredBy!)
+        
+        if (user.orders.length === 0) {
+          // User signed up but no completed orders yet
+          return [{
+            id: `signup-${user.id}`,
+            referralCode: user.referredBy!,
+            commissionRate: 0.10,
+            commissionAmount: 0,
+            isPaid: false,
+            createdAt: user.createdAt,
+            referrer: referrer || { name: 'Unknown', email: 'N/A' },
+            referredUser: { name: user.name, email: user.email },
+            order: null
+          }]
+        }
+        
+        // Create entry for each completed order
+        return user.orders.map(order => ({
+          id: order.referral?.id || `order-${order.id}`,
+          referralCode: user.referredBy!,
+          commissionRate: 0.10,
+          commissionAmount: Number(order.referral?.commissionAmount || 0) || (Number(order.amount) * 0.10),
+          isPaid: order.referral?.isPaid || false,
+          createdAt: order.createdAt,
+          referrer: referrer || { name: 'Unknown', email: 'N/A' },
+          referredUser: { name: user.name, email: user.email },
+          order: {
+            orderNumber: order.orderNumber,
+            amount: Number(order.amount),
+            status: order.status
+          }
+        }))
+      }) as any[])
 
       return successResponse({
-        referrals: transformedReferrals,
-        meta: getPaginationMeta(totalReferrals, page, limit),
+        referrals: transformedData,
+        meta: getPaginationMeta(totalReferred, page, limit),
       })
     }
 
